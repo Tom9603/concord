@@ -1,0 +1,42 @@
+appId: com.concord.desktop
+productName: Concord
+copyright: © 2026 Concord
+
+directories:
+  output: desktop/release
+  buildResources: desktop/build
+
+# Fichiers embarqués dans l'app (le client compilé + le code Electron).
+# Le serveur backend n'est PAS inclus : il tourne séparément (hébergé/host).
+files:
+  - desktop/main.js
+  - desktop/preload.js
+  - client/dist/**/*
+  - package.json
+
+extraMetadata:
+  main: desktop/main.js
+
+# Où publier les versions pour la mise à jour automatique.
+publish:
+  provider: github
+  owner: tom9603
+  repo: concord
+
+win:
+  target: [nsis]
+  artifactName: ${productName}-${version}-Setup.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+
+mac:
+  target: [dmg]
+  category: public.app-category.social
+  identity: null # pas de signature (version de test)
+
+linux:
+  target: [AppImage]
+  category: Network

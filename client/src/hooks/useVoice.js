@@ -1,0 +1,196 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { getSocket } from '../socket.js';
+
+// Serveur STUN public (aide à traverser les NAT sur un réseau local / la plupart des cas).
+const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+/**
+ * Gère la connexion vocale WebRTC en maillage (chaque pair se connecte à tous les autres).
+ * Le nouveau venu initie les offres vers les pairs déjà présents.
+ * La connexion vit au niveau de l'app : elle survit à la navigation entre salons.
+ */
+export function useVoice() {
+  const [connectedChannelId, setConnectedChannelId] = useState(null);
+  const [muted, setMuted] = useState(false);
+  const [remoteStreams, setRemoteStreams] = useState({}); // socketId -> MediaStream
+
+  const pcs = useRef(new Map()); // socketId -> RTCPeerConnection
+  const localStream = useRef(null);
+  const mutedRef = useRef(false);
+  const speakingRef = useRef(false);
+  const audioCtx = useRef(null);
+  const rafId = useRef(null);
+
+  const socket = getSocket();
+
+  const removePeer = useCallback((socketId) => {
+    const pc = pcs.current.get(socketId);
+    if (pc) {
+      pc.onicecandidate = null;
+      pc.ontrack = null;
+      pc.close();
+      pcs.current.delete(socketId);
+    }
+    setRemoteStreams((prev) => {
+      if (!(socketId in prev)) return prev;
+      const next = { ...prev };
+      delete next[socketId];
+      return next;
+    });
+  }, []);
+
+  const createPeer = useCallback((peerSocketId, initiator) => {
+    if (pcs.current.has(peerSocketId)) return pcs.current.get(peerSocketId);
+    const pc = new RTCPeerConnection(RTC_CONFIG);
+    pcs.current.set(peerSocketId, pc);
+
+    if (localStream.current) {
+      for (const track of localStream.current.getTracks()) pc.addTrack(track, localStream.current);
+    }
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate) socket.emit('voice:signal', { targetSocketId: peerSocketId, data: { candidate: e.candidate } });
+    };
+    pc.ontrack = (e) => {
+      const [stream] = e.streams;
+      setRemoteStreams((prev) => ({ ...prev, [peerSocketId]: stream }));
+    };
+    pc.onconnectionstatechange = () => {
+      if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) removePeer(peerSocketId);
+    };
+
+    if (initiator) {
+      (async () => {
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          socket.emit('voice:signal', { targetSocketId: peerSocketId, data: { sdp: pc.localDescription } });
+        } catch (err) {
+          console.warn('offer error', err);
+        }
+      })();
+    }
+    return pc;
+  }, [socket, removePeer]);
+
+  // --- Détection locale de la parole (envoyée aux autres via le serveur) ---
+  const startSpeakingDetection = useCallback((stream) => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtx.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+
+      const tick = () => {
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / data.length);
+        const speaking = !mutedRef.current && rms > 0.04;
+        if (speaking !== speakingRef.current) {
+          speakingRef.current = speaking;
+          socket.emit('voice:speaking', { speaking });
+        }
+        rafId.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (err) {
+      console.warn('speaking detection off', err);
+    }
+  }, [socket]);
+
+  const teardown = useCallback(() => {
+    for (const id of [...pcs.current.keys()]) removePeer(id);
+    if (rafId.current) cancelAnimationFrame(rafId.current);
+    rafId.current = null;
+    if (audioCtx.current) { audioCtx.current.close().catch(() => {}); audioCtx.current = null; }
+    if (localStream.current) {
+      localStream.current.getTracks().forEach((t) => t.stop());
+      localStream.current = null;
+    }
+    speakingRef.current = false;
+  }, [removePeer]);
+
+  const join = useCallback(async (channelId) => {
+    if (connectedChannelId === channelId) return;
+    teardown(); // quitter une éventuelle connexion précédente
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      alert('Micro inaccessible : autorise le microphone dans ton navigateur pour parler.');
+      return;
+    }
+    localStream.current = stream;
+    stream.getAudioTracks().forEach((t) => (t.enabled = !mutedRef.current));
+    startSpeakingDetection(stream);
+    socket.emit('voice:join', { channelId });
+    setConnectedChannelId(channelId);
+  }, [connectedChannelId, socket, teardown, startSpeakingDetection]);
+
+  const leave = useCallback(() => {
+    socket.emit('voice:leave');
+    if (speakingRef.current) socket.emit('voice:speaking', { speaking: false });
+    teardown();
+    setConnectedChannelId(null);
+  }, [socket, teardown]);
+
+  const toggleMute = useCallback(() => {
+    setMuted((prev) => {
+      const next = !prev;
+      mutedRef.current = next;
+      localStream.current?.getAudioTracks().forEach((t) => (t.enabled = !next));
+      socket.emit('voice:mute', { muted: next });
+      if (next && speakingRef.current) {
+        speakingRef.current = false;
+        socket.emit('voice:speaking', { speaking: false });
+      }
+      return next;
+    });
+  }, [socket]);
+
+  // Écoute des évènements de signalisation (montés une seule fois)
+  useEffect(() => {
+    const onPeers = ({ peers }) => {
+      for (const p of peers) createPeer(p.socketId, true);
+    };
+    const onSignal = async ({ fromSocketId, data }) => {
+      const pc = pcs.current.get(fromSocketId) || createPeer(fromSocketId, false);
+      try {
+        if (data.sdp) {
+          await pc.setRemoteDescription(data.sdp);
+          if (data.sdp.type === 'offer') {
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            socket.emit('voice:signal', { targetSocketId: fromSocketId, data: { sdp: pc.localDescription } });
+          }
+        } else if (data.candidate) {
+          await pc.addIceCandidate(data.candidate);
+        }
+      } catch (err) {
+        console.warn('signal error', err);
+      }
+    };
+    const onPeerLeft = ({ socketId }) => removePeer(socketId);
+
+    socket.on('voice:peers', onPeers);
+    socket.on('voice:signal', onSignal);
+    socket.on('voice:peer-left', onPeerLeft);
+    return () => {
+      socket.off('voice:peers', onPeers);
+      socket.off('voice:signal', onSignal);
+      socket.off('voice:peer-left', onPeerLeft);
+    };
+  }, [socket, createPeer, removePeer]);
+
+  // Nettoyage à la fermeture de l'app
+  useEffect(() => () => teardown(), [teardown]);
+
+  return { connectedChannelId, muted, remoteStreams, join, leave, toggleMute };
+}
