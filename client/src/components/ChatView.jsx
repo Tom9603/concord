@@ -6,6 +6,8 @@ import Avatar from './Avatar.jsx';
 import Composer from './Composer.jsx';
 import Attachment from './Attachment.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
+import SaveButton from './SaveButton.jsx';
+import WatchTogether from './WatchTogether.jsx';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -122,6 +124,7 @@ export default function ChatView({ channel, currentUser, canManage }) {
 
   return (
     <div className="chat-area">
+      <WatchTogether channelId={channel.id} />
       <button className="chat-pins-btn" title="Messages épinglés" onClick={togglePins}>📌</button>
 
       {showPins && (
@@ -217,6 +220,7 @@ export default function ChatView({ channel, currentUser, canManage }) {
                 <div className="msg-actions">
                   <button title="Réagir" onClick={() => (pickerFor === m.id ? setPickerFor(null) : openPicker(m.id))}>😊</button>
                   <button title="Répondre" onClick={() => setReplyingTo(m)}>↩️</button>
+                  <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`#${channel.name}`} />
                   {canManage && <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}>📌</button>}
                   {isOwn && <button title="Modifier" onClick={() => startEdit(m)}>✏️</button>}
                   {(isOwn || canManage) && <button title="Supprimer" onClick={() => del(m)}>🗑️</button>}

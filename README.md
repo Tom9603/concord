@@ -38,6 +38,14 @@ Aucune dépendance native à compiler : SQLite et le chiffrement utilisent des m
 - **Profil** : nom affiché, couleur ou image d’avatar, statut, bio
 - **App desktop** (Windows / macOS / Linux) avec mise à jour automatique
 
+### ✨ Fonctionnalités signature (ce que Discord ne fait pas / mal)
+
+- **📺 Regarder / écouter ensemble** : colle un lien YouTube ou un fichier vidéo/audio →
+  lecture **synchronisée** pour tout le salon (play/pause/avance partagés)
+- **⚡ Messages express** : bibliothèque perso de messages tout prêts, envoi en 1 clic
+- **🔖 Messages sauvegardés & rappels** : garde n’importe quel message, avec **rappel** programmé
+  (« rappelle-moi dans 1 h ») + notification
+
 ## 🚀 Démarrage
 
 Prérequis : **Node.js ≥ 24** (pour le module `node:sqlite`).

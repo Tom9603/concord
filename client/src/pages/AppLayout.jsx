@@ -28,6 +28,7 @@ import RolesModal from '../components/RolesModal.jsx';
 import MemberModal from '../components/MemberModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
 import FriendsPanel from '../components/FriendsPanel.jsx';
+import SavedPanel from '../components/SavedPanel.jsx';
 import SearchModal from '../components/SearchModal.jsx';
 import ServerSettingsModal from '../components/ServerSettingsModal.jsx';
 
@@ -50,7 +51,7 @@ export default function AppLayout() {
   const [dmConversations, setDmConversations] = useState([]);
   const [activeDm, setActiveDm] = useState(null); // objet utilisateur
   const [hasUnreadDm, setHasUnreadDm] = useState(false);
-  const [showFriends, setShowFriends] = useState(false);
+  const [homeView, setHomeView] = useState('friends'); // 'friends' | 'saved' | null (conversation)
 
   const [modal, setModal] = useState(null); // 'create' | 'settings' | 'roles' | 'serverSettings'
   const [searchOpen, setSearchOpen] = useState(false);
@@ -155,6 +156,11 @@ export default function AppLayout() {
         setActiveServerId((cur) => (cur === serverId ? (list[0]?.id ?? null) : cur));
       });
     };
+    const onReminder = ({ item }) => {
+      playPing();
+      const body = item.content || (item.attachment_url ? '📎 pièce jointe' : 'Message enregistré');
+      desktopNotify('🔔 Rappel : ' + (item.author_name || 'ton message'), body, openSaved);
+    };
 
     socket.on('presence', onPresence);
     socket.on('voice:state', onVoice);
@@ -162,6 +168,7 @@ export default function AppLayout() {
     socket.on('dm:new', onDmNew);
     socket.on('message:new', onMessageNew);
     socket.on('server:kicked', onKicked);
+    socket.on('reminder:due', onReminder);
     return () => {
       socket.off('presence', onPresence);
       socket.off('voice:state', onVoice);
@@ -169,6 +176,7 @@ export default function AppLayout() {
       socket.off('dm:new', onDmNew);
       socket.off('message:new', onMessageNew);
       socket.off('server:kicked', onKicked);
+      socket.off('reminder:due', onReminder);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id, refreshDetail, refreshServers, refreshConversations]);
@@ -210,18 +218,15 @@ export default function AppLayout() {
   }
   function openDm(target) {
     setActiveDm(target);
-    setShowFriends(false);
+    setHomeView(null);
     setView('dm');
     setHasUnreadDm(false);
   }
-  function openFriends() {
-    setShowFriends(true);
-    setActiveDm(null);
-    setView('dm');
-  }
+  function openFriends() { setHomeView('friends'); setActiveDm(null); setView('dm'); }
+  function openSaved() { setHomeView('saved'); setActiveDm(null); setView('dm'); }
   function goHome() {
     setView('dm');
-    setShowFriends(true);
+    setHomeView('friends');
     setActiveDm(null);
     setHasUnreadDm(false);
     refreshConversations();
@@ -260,7 +265,9 @@ export default function AppLayout() {
             onSelect={openDm}
             onStartDm={startDm}
             onOpenFriends={openFriends}
-            friendsActive={showFriends}
+            friendsActive={homeView === 'friends'}
+            onOpenSaved={openSaved}
+            savedActive={homeView === 'saved'}
           />
         ) : (
           <ChannelSidebar
@@ -299,8 +306,10 @@ export default function AppLayout() {
 
       {/* Zone principale */}
       {view === 'dm' ? (
-        showFriends ? (
+        homeView === 'friends' ? (
           <FriendsPanel onlineIds={onlineIds} onOpenDm={openDm} />
+        ) : homeView === 'saved' ? (
+          <SavedPanel currentUser={user} />
         ) : activeDm ? (
           <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} />
         ) : (

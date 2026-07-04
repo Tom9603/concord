@@ -3,6 +3,7 @@ import { uploadFile } from '../api.js';
 import GifPicker from './GifPicker.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
 import VoiceRecorder from './VoiceRecorder.jsx';
+import QuickMessages from './QuickMessages.jsx';
 
 const readAsDataURL = (file) =>
   new Promise((resolve, reject) => {
@@ -68,6 +69,9 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
       {panel === 'emoji' && (
         <EmojiPicker onPick={(em) => { setInput((v) => v + em); inputRef.current?.focus(); }} onClose={() => setPanel(null)} />
       )}
+      {panel === 'quick' && (
+        <QuickMessages onSelect={(t) => { onSendText(t); afterSend(); }} onClose={() => setPanel(null)} />
+      )}
 
       {replyingTo && (
         <div className="reply-bar">
@@ -83,6 +87,7 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
             <input type="file" hidden onChange={onPickFile} />
           </label>
           <button type="button" className={`composer-attach gif-btn ${panel === 'gif' ? 'active' : ''}`} title="GIF" onClick={() => setPanel((p) => (p === 'gif' ? null : 'gif'))}>GIF</button>
+          <button type="button" className={`composer-attach ${panel === 'quick' ? 'active' : ''}`} title="Messages express" onClick={() => setPanel((p) => (p === 'quick' ? null : 'quick'))}>⚡</button>
           <button type="button" className={`composer-attach ${panel === 'emoji' ? 'active' : ''}`} title="Emoji" onClick={() => setPanel((p) => (p === 'emoji' ? null : 'emoji'))}>😊</button>
           <VoiceRecorder onSend={(url) => { onSendAttachment(url, ''); afterSend(); }} disabled={uploading} />
           <input

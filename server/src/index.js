@@ -13,6 +13,8 @@ import uploadRoutes, { uploadsDir } from './routes/uploads.js';
 import iceRoutes from './routes/ice.js';
 import gifRoutes from './routes/gifs.js';
 import friendRoutes from './routes/friends.js';
+import savedRoutes from './routes/saved.js';
+import quickRoutes from './routes/quick.js';
 import { setupSocket } from './socket.js';
 import { setIO } from './realtime.js';
 
@@ -30,6 +32,8 @@ app.use('/api/uploads', uploadRoutes);
 app.use('/api/ice', iceRoutes);
 app.use('/api/gifs', gifRoutes);
 app.use('/api/friends', friendRoutes);
+app.use('/api/saved', savedRoutes);
+app.use('/api/quick', quickRoutes);
 
 // Fichiers uploadés : nosniff + téléchargement forcé pour tout ce qui n'est pas média (anti-XSS).
 app.use(

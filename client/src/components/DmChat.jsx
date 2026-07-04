@@ -5,6 +5,7 @@ import { renderRich } from '../richtext.jsx';
 import Avatar from './Avatar.jsx';
 import Composer from './Composer.jsx';
 import Attachment from './Attachment.jsx';
+import SaveButton from './SaveButton.jsx';
 
 function formatTime(ts) {
   const d = new Date(ts.replace(' ', 'T') + 'Z');
@@ -103,6 +104,9 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall }) {
                     )}
                     {m.content && <div className="msg-text">{renderRich(m.content, currentUser)}</div>}
                     {m.attachment_url && <Attachment url={m.attachment_url} name={m.attachment_name} />}
+                  </div>
+                  <div className="msg-actions">
+                    <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`@${peer.username}`} />
                   </div>
                 </div>
               );

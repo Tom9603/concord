@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Avatar from './Avatar.jsx';
 
 /** Barre latérale des messages privés : bouton Amis + liste des conversations. */
-export default function DmSidebar({ conversations, activeUserId, onlineIds, onSelect, onStartDm, onOpenFriends, friendsActive }) {
+export default function DmSidebar({ conversations, activeUserId, onlineIds, onSelect, onStartDm, onOpenFriends, friendsActive, onOpenSaved, savedActive }) {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const online = new Set(onlineIds);
@@ -26,11 +26,11 @@ export default function DmSidebar({ conversations, activeUserId, onlineIds, onSe
         <span>Messages privés</span>
       </div>
 
-      <div
-        className={`friends-entry ${friendsActive ? 'active' : ''}`}
-        onClick={onOpenFriends}
-      >
+      <div className={`friends-entry ${friendsActive ? 'active' : ''}`} onClick={onOpenFriends}>
         👥 Amis
+      </div>
+      <div className={`friends-entry ${savedActive ? 'active' : ''}`} onClick={onOpenSaved}>
+        🔖 Sauvegardés
       </div>
 
       <form onSubmit={start} style={{ padding: '10px 8px' }}>

@@ -8,6 +8,24 @@ const onlineUsers = new Map();
 const voiceRooms = new Map();
 // Appels privés (1-à-1) : callId -> { callerId, calleeId, callerSocketId, calleeSocketId }
 const activeCalls = new Map();
+// « Regarder ensemble » : channelId -> { url, kind, mediaId, playing, time, ts }
+const watchSessions = new Map();
+
+function parseMedia(url) {
+  if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return null;
+  const yt = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/.exec(url);
+  if (yt) return { kind: 'youtube', id: yt[1] };
+  if (/\.(mp4|webm|ogg|mp3|m4a|wav)(\?|#|$)/i.test(url)) return { kind: 'media', id: url };
+  return null;
+}
+
+/** État courant d'une session (le temps est extrapolé si en lecture). */
+function watchState(channelId) {
+  const s = watchSessions.get(channelId);
+  if (!s) return null;
+  const time = s.playing ? s.time + (Date.now() - s.ts) / 1000 : s.time;
+  return { url: s.url, kind: s.kind, mediaId: s.mediaId, playing: s.playing, time };
+}
 
 function roomMembers(channelId) {
   return Array.from(voiceRooms.get(channelId)?.values() || []);
@@ -91,6 +109,16 @@ function broadcastPresence(io) {
 }
 
 export function setupSocket(io) {
+  // Vérificateur de rappels : notifie l'utilisateur quand un rappel arrive à échéance.
+  setInterval(() => {
+    const now = Math.floor(Date.now() / 1000);
+    const due = db.prepare('SELECT * FROM saved_messages WHERE remind_at IS NOT NULL AND notified = 0 AND remind_at <= ?').all(now);
+    for (const item of due) {
+      db.prepare('UPDATE saved_messages SET notified = 1 WHERE id = ?').run(item.id);
+      io.to('user:' + item.user_id).emit('reminder:due', { item });
+    }
+  }, 20000);
+
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
     const payload = token ? verifyToken(token) : null;
@@ -343,6 +371,46 @@ export function setupSocket(io) {
 
     socket.on('call:signal', ({ targetSocketId, data }) => {
       if (targetSocketId) io.to(targetSocketId).emit('call:signal', { fromSocketId: socket.id, data });
+    });
+
+    // ------------------------------------------------------------------
+    // Regarder / écouter ensemble (lecture synchronisée par salon)
+    // ------------------------------------------------------------------
+    function watchMember(channelId) {
+      const channel = db.prepare('SELECT server_id FROM channels WHERE id = ?').get(channelId);
+      if (!channel) return null;
+      return db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(channel.server_id, userId) ? channel : null;
+    }
+
+    socket.on('watch:start', ({ channelId, url }) => {
+      const channel = watchMember(channelId);
+      if (!channel) return;
+      const media = parseMedia(url);
+      if (!media) { socket.emit('watch:error', { message: 'Lien non supporté (YouTube ou fichier vidéo/audio direct).' }); return; }
+      watchSessions.set(channelId, { url, kind: media.kind, mediaId: media.id, playing: true, time: 0, ts: Date.now() });
+      io.to('server:' + channel.server_id).emit('watch:state', { channelId: Number(channelId), session: watchState(channelId), by: user.display_name });
+    });
+
+    socket.on('watch:control', ({ channelId, playing, time }) => {
+      const channel = watchMember(channelId);
+      const s = watchSessions.get(channelId);
+      if (!channel || !s) return;
+      s.playing = !!playing;
+      s.time = Math.max(0, Number(time) || 0);
+      s.ts = Date.now();
+      socket.to('server:' + channel.server_id).emit('watch:sync', { channelId: Number(channelId), playing: s.playing, time: s.time });
+    });
+
+    socket.on('watch:get', ({ channelId }) => {
+      if (!watchMember(channelId)) return;
+      socket.emit('watch:state', { channelId: Number(channelId), session: watchState(channelId) });
+    });
+
+    socket.on('watch:stop', ({ channelId }) => {
+      const channel = watchMember(channelId);
+      if (!channel) return;
+      watchSessions.delete(channelId);
+      io.to('server:' + channel.server_id).emit('watch:state', { channelId: Number(channelId), session: null });
     });
 
     socket.on('disconnect', () => {
