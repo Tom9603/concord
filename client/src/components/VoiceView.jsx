@@ -1,4 +1,5 @@
 import Avatar from './Avatar.jsx';
+import Soundboard from './Soundboard.jsx';
 
 /**
  * Vue d'un salon vocal avec **audio réel** (WebRTC).
@@ -40,6 +41,8 @@ export default function VoiceView({ channel, members, currentUser, connected, mu
           <button className="voice-btn join" onClick={onJoin}>Rejoindre le salon vocal</button>
         )}
       </div>
+
+      <Soundboard channelId={channel.id} serverId={channel.server_id} />
 
       <p className="voice-note" style={{ fontSize: 12, opacity: 0.7 }}>
         🎧 Audio en temps réel (WebRTC). Autorise ton micro à la première connexion.

@@ -6,6 +6,7 @@ import { useVoice } from '../hooks/useVoice.js';
 import { useCall } from '../hooks/useCall.js';
 import { makeCan } from '../permissions.js';
 import { initNotifications, playPing, desktopNotify } from '../notify.js';
+import { playSound } from '../sounds.js';
 
 /** Le message mentionne-t-il l'utilisateur (@pseudo) ? */
 function mentionsUser(content, user) {
@@ -27,6 +28,7 @@ import SettingsModal from '../components/SettingsModal.jsx';
 import RolesModal from '../components/RolesModal.jsx';
 import MemberModal from '../components/MemberModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
+import Whiteboard from '../components/Whiteboard.jsx';
 import FriendsPanel from '../components/FriendsPanel.jsx';
 import SavedPanel from '../components/SavedPanel.jsx';
 import SearchModal from '../components/SearchModal.jsx';
@@ -55,6 +57,7 @@ export default function AppLayout() {
 
   const [modal, setModal] = useState(null); // 'create' | 'settings' | 'roles' | 'serverSettings'
   const [searchOpen, setSearchOpen] = useState(false);
+  const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [memberTarget, setMemberTarget] = useState(null);
 
   const can = makeCan(detail?.is_owner, detail?.my_permissions);
@@ -161,6 +164,7 @@ export default function AppLayout() {
       const body = item.content || (item.attachment_url ? '📎 pièce jointe' : 'Message enregistré');
       desktopNotify('🔔 Rappel : ' + (item.author_name || 'ton message'), body, openSaved);
     };
+    const onSound = ({ sound }) => playSound(sound);
 
     socket.on('presence', onPresence);
     socket.on('voice:state', onVoice);
@@ -169,6 +173,7 @@ export default function AppLayout() {
     socket.on('message:new', onMessageNew);
     socket.on('server:kicked', onKicked);
     socket.on('reminder:due', onReminder);
+    socket.on('sound:play', onSound);
     return () => {
       socket.off('presence', onPresence);
       socket.off('voice:state', onVoice);
@@ -177,6 +182,7 @@ export default function AppLayout() {
       socket.off('message:new', onMessageNew);
       socket.off('server:kicked', onKicked);
       socket.off('reminder:due', onReminder);
+      socket.off('sound:play', onSound);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id, refreshDetail, refreshServers, refreshConversations]);
@@ -327,6 +333,7 @@ export default function AppLayout() {
             <span>{activeChannel.name}</span>
             {activeChannel.type === 'text' && <span className="topic">Salon textuel</span>}
             <span className="spacer" />
+            <button className="header-btn" title="Tableau blanc partagé" onClick={() => setWhiteboardOpen(true)}>🎨</button>
             <button className="header-btn" title="Rechercher" onClick={() => setSearchOpen(true)}>🔍</button>
             <button className={`header-btn ${showMembers ? 'active' : ''}`} title="Afficher/masquer les membres" onClick={() => setShowMembers((v) => !v)}>👥</button>
           </div>
@@ -381,6 +388,11 @@ export default function AppLayout() {
 
       {/* Appels vocaux privés (entrant / en cours) */}
       <CallOverlay call={call} />
+
+      {/* Tableau blanc partagé */}
+      {whiteboardOpen && activeChannel && (
+        <Whiteboard channelId={activeChannel.id} onClose={() => setWhiteboardOpen(false)} />
+      )}
 
       {/* Modales */}
       {modal === 'create' && <CreateServerModal onClose={() => setModal(null)} onReady={handleServerReady} />}

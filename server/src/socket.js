@@ -10,6 +10,8 @@ const voiceRooms = new Map();
 const activeCalls = new Map();
 // « Regarder ensemble » : channelId -> { url, kind, mediaId, playing, time, ts }
 const watchSessions = new Map();
+// Tableau blanc : channelId -> [ strokes ] (historique en mémoire, plafonné)
+const boards = new Map();
 
 function parseMedia(url) {
   if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return null;
@@ -411,6 +413,39 @@ export function setupSocket(io) {
       if (!channel) return;
       watchSessions.delete(channelId);
       io.to('server:' + channel.server_id).emit('watch:state', { channelId: Number(channelId), session: null });
+    });
+
+    // ------------------------------------------------------------------
+    // Soundboard : diffuse un son aux membres connectés au salon vocal
+    // ------------------------------------------------------------------
+    socket.on('sound:play', ({ channelId, sound }) => {
+      if (!sound || !watchMember(channelId)) return;
+      socket.to('voice:' + channelId).emit('sound:play', { channelId: Number(channelId), sound });
+    });
+
+    // ------------------------------------------------------------------
+    // Tableau blanc partagé (dessin temps réel par salon)
+    // ------------------------------------------------------------------
+    socket.on('board:get', ({ channelId }) => {
+      if (!watchMember(channelId)) return;
+      socket.emit('board:init', { channelId: Number(channelId), strokes: boards.get(channelId) || [] });
+    });
+
+    socket.on('board:draw', ({ channelId, stroke }) => {
+      const channel = watchMember(channelId);
+      if (!channel || !stroke) return;
+      let hist = boards.get(channelId);
+      if (!hist) { hist = []; boards.set(channelId, hist); }
+      hist.push(stroke);
+      if (hist.length > 8000) hist.splice(0, hist.length - 8000); // plafond
+      socket.to('server:' + channel.server_id).emit('board:draw', { channelId: Number(channelId), stroke });
+    });
+
+    socket.on('board:clear', ({ channelId }) => {
+      const channel = watchMember(channelId);
+      if (!channel) return;
+      boards.set(channelId, []);
+      io.to('server:' + channel.server_id).emit('board:clear', { channelId: Number(channelId) });
     });
 
     socket.on('disconnect', () => {

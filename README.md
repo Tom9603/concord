@@ -45,6 +45,8 @@ Aucune dépendance native à compiler : SQLite et le chiffrement utilisent des m
 - **⚡ Messages express** : bibliothèque perso de messages tout prêts, envoi en 1 clic
 - **🔖 Messages sauvegardés & rappels** : garde n’importe quel message, avec **rappel** programmé
   (« rappelle-moi dans 1 h ») + notification
+- **🔊 Soundboard** : sons de base + sons téléchargeables, joués pour tout le salon vocal
+- **🎨 Tableau blanc partagé** : dessiner / écrire à plusieurs en temps réel par salon
 
 ## 🚀 Démarrage
 

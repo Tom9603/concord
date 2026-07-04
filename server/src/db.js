@@ -138,6 +138,14 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS sounds (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    server_id  INTEGER NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
+    url        TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id, id);
   CREATE INDEX IF NOT EXISTS idx_members_user ON server_members(user_id);
   CREATE INDEX IF NOT EXISTS idx_member_roles ON member_roles(server_id, user_id);
