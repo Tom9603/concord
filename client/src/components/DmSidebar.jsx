@@ -46,7 +46,7 @@ export default function DmSidebar({ conversations, activeUserId, onlineIds, onSe
       <div className="channel-list">
         {conversations.length === 0 && (
           <p style={{ color: 'var(--text-faint)', fontSize: 13, padding: '8px' }}>
-            Aucune conversation. Saisis un nom d’utilisateur ci-dessus pour commencer.
+            Aucune conversation. Saisissez un nom d’utilisateur ci-dessus pour commencer.
           </p>
         )}
         {conversations.map((c) => (

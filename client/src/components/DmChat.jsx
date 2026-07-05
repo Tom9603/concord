@@ -82,7 +82,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall }) {
             <div className="msg-welcome">
               <Avatar user={peer} size={64} />
               <h2 style={{ marginTop: 12 }}>{peer.display_name}</h2>
-              <p>Ceci est le début de ta conversation privée avec <strong>{peer.display_name}</strong>.</p>
+              <p>Ceci est le début de votre conversation privée avec <strong>{peer.display_name}</strong>.</p>
             </div>
 
             {messages.map((m, i) => {

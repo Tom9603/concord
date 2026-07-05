@@ -3,8 +3,8 @@ import { mediaUrl } from '../api.js';
 const SECTIONS = [
   { id: 'home', icon: '🏠', label: 'Accueil' },
   { id: 'dm', icon: '💬', label: 'Messages' },
-  { id: 'friends', icon: '👥', label: 'Amis' },
-  { id: 'saved', icon: '🔖', label: 'Sauvés' },
+  { id: 'friends', icon: '👥', label: 'Contacts' },
+  { id: 'saved', icon: '🔖', label: 'Rappels' },
 ];
 
 /** Rail de navigation : sections de l'app (Accueil, Messages, Amis, Sauvés) + serveurs. */

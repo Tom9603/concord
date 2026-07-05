@@ -24,7 +24,7 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
     setMsg('');
     try {
       const r = await api('/friends/request', { method: 'POST', body: { username: username.trim() } });
-      setMsg(r.status === 'accepted' ? 'Vous êtes maintenant amis !' : 'Demande envoyée ✅');
+      setMsg(r.status === 'accepted' ? 'Vous êtes maintenant en contact !' : 'Invitation envoyée ✅');
       setUsername('');
       load();
     } catch (err) { setMsg(err.message); }
@@ -45,17 +45,17 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
 
   return (
     <div className="main-content">
-      <div className="content-header"><span>👥 Amis</span></div>
+      <div className="content-header"><span>👥 Contacts</span></div>
       <div className="friends-body">
         <form className="add-friend" onSubmit={addFriend}>
-          <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Ajouter par nom d’utilisateur…" />
+          <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Ajouter un contact par nom d’utilisateur…" />
           <button className="btn" style={{ width: 'auto', padding: '0 18px' }}>Envoyer</button>
         </form>
         {msg && <div className="friend-msg">{msg}</div>}
 
         {data.incoming.length > 0 && (
           <section>
-            <h3>Demandes reçues — {data.incoming.length}</h3>
+            <h3>Invitations reçues — {data.incoming.length}</h3>
             {data.incoming.map((u) => (
               <Row key={u.id} u={u}>
                 <button className="btn" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => act(`/friends/${u.id}/accept`)}>Accepter</button>
@@ -66,8 +66,8 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
         )}
 
         <section>
-          <h3>Amis — {data.friends.length}</h3>
-          {data.friends.length === 0 && <p className="friends-empty">Aucun ami pour l’instant. Ajoute quelqu’un ci-dessus !</p>}
+          <h3>Contacts — {data.friends.length}</h3>
+          {data.friends.length === 0 && <p className="friends-empty">Aucun contact pour l’instant. Ajoutez-en un ci-dessus !</p>}
           {data.friends.map((u) => (
             <Row key={u.id} u={u}>
               <button className="btn" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => onOpenDm(u)}>💬 Message</button>
@@ -79,7 +79,7 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
 
         {data.outgoing.length > 0 && (
           <section>
-            <h3>Demandes envoyées — {data.outgoing.length}</h3>
+            <h3>Invitations envoyées — {data.outgoing.length}</h3>
             {data.outgoing.map((u) => (
               <Row key={u.id} u={u}>
                 <button className="btn btn-ghost" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => act(`/friends/${u.id}`, 'DELETE')}>Annuler</button>

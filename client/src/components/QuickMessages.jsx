@@ -30,7 +30,7 @@ export default function QuickMessages({ onSelect, onClose }) {
       </div>
 
       <div className="quick-list">
-        {items.length === 0 && <div className="quick-empty">Aucun message express. Ajoute-en un ci-dessous&nbsp;!</div>}
+        {items.length === 0 && <div className="quick-empty">Aucun message express. Ajoutez-en un ci-dessous&nbsp;!</div>}
         {items.map((it) => (
           <div className="quick-item" key={it.id}>
             <button className="quick-text" onClick={() => { onSelect(it.text); onClose(); }}>{it.text}</button>

@@ -40,8 +40,8 @@ export default function CreateServerModal({ onClose, onReady }) {
       <form onSubmit={submit}>
         {tab === 'create' ? (
           <>
-            <h2>Crée ton serveur</h2>
-            <p className="modal-sub">Donne-lui un nom, tu pourras tout personnaliser ensuite.</p>
+            <h2>Créez votre serveur</h2>
+            <p className="modal-sub">Donnez-lui un nom, vous pourrez tout personnaliser ensuite.</p>
             <div className="field">
               <label>Nom du serveur</label>
               <input value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="Ma communauté" />
@@ -49,8 +49,8 @@ export default function CreateServerModal({ onClose, onReady }) {
           </>
         ) : (
           <>
-            <h2>Rejoins un serveur</h2>
-            <p className="modal-sub">Colle un code d’invitation qu’un ami t’a partagé.</p>
+            <h2>Rejoignez un serveur</h2>
+            <p className="modal-sub">Collez un code d’invitation qu’un contact vous a partagé.</p>
             <div className="field">
               <label>Code d’invitation</label>
               <input value={code} onChange={(e) => setCode(e.target.value)} autoFocus placeholder="ex. 0cd739d4" />

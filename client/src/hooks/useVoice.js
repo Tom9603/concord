@@ -133,7 +133,7 @@ export function useVoice() {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-      alert('Micro inaccessible : autorise le microphone dans ton navigateur pour parler.');
+      alert('Micro inaccessible : autorisez le microphone dans votre navigateur pour parler.');
       return;
     }
     localStream.current = stream;

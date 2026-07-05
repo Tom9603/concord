@@ -29,8 +29,8 @@ export default function Login() {
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={submit}>
         <Logo />
-        <h1>Content de te revoir&nbsp;!</h1>
-        <p className="subtitle">Connecte-toi pour rejoindre tes serveurs.</p>
+        <h1>Content de vous revoir&nbsp;!</h1>
+        <p className="subtitle">Connectez-vous pour accéder à vos espaces.</p>
 
         {error && <div className="error-msg">{error}</div>}
 

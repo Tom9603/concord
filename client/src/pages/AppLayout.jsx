@@ -155,7 +155,7 @@ export default function AppLayout() {
     };
     const onReminder = ({ item }) => {
       playPing();
-      desktopNotify('🔔 Rappel : ' + (item.author_name || 'ton message'), item.content || '📎 pièce jointe', openSaved);
+      desktopNotify('🔔 Rappel : ' + (item.author_name || 'votre message'), item.content || '📎 pièce jointe', openSaved);
     };
     const onSound = ({ sound }) => playSound(sound);
 
@@ -250,7 +250,7 @@ export default function AppLayout() {
           {section === 'dm' && (
             activeDm
               ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} />
-              : <div className="main-content"><div className="empty-hero"><h2>Messages 💬</h2><p>Choisis une conversation à gauche, ou ajoute un ami.</p></div></div>
+              : <div className="main-content"><div className="empty-hero"><h2>Messages 💬</h2><p>Choisissez une conversation à gauche, ou ajoutez un contact.</p></div></div>
           )}
           {section === 'server' && (
             activeChannel ? (

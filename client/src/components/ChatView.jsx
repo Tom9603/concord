@@ -148,7 +148,7 @@ export default function ChatView({ channel, currentUser, canManage }) {
         <div className="spacer-top" />
         <div className="msg-welcome">
           <h2># {channel.name}</h2>
-          <p>C’est le début du salon <strong>#{channel.name}</strong>. Envoie le premier message&nbsp;!</p>
+          <p>C’est le début du salon <strong>#{channel.name}</strong>. Envoyez le premier message&nbsp;!</p>
         </div>
 
         {messages.map((m, i) => {

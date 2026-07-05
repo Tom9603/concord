@@ -102,7 +102,7 @@ export default function WatchTogether({ channelId }) {
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="Colle un lien YouTube ou un fichier .mp4 / .mp3…"
+            placeholder="Collez un lien YouTube ou un fichier .mp4 / .mp3…"
             onKeyDown={(e) => e.key === 'Enter' && start()}
           />
           <button className="btn" style={{ width: 'auto', padding: '0 18px' }} onClick={start}>Lancer</button>

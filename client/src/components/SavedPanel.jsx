@@ -37,11 +37,11 @@ export default function SavedPanel({ currentUser }) {
 
   return (
     <div className="main-content">
-      <div className="content-header"><span>🔖 Sauvegardés & rappels</span></div>
+      <div className="content-header"><span>🔖 Rappels</span></div>
       <div className="saved-body">
         {items.length === 0 && (
           <p className="saved-empty">
-            Rien d’enregistré. Sur n’importe quel message, clique 🔖 pour le garder ici — et te le faire rappeler plus tard !
+            Aucun rappel pour l’instant. Sur n’importe quel message, cliquez sur 🔖 pour l’enregistrer ici — et vous le faire rappeler plus tard.
           </p>
         )}
         {items.map((it) => (

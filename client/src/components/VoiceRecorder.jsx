@@ -26,7 +26,7 @@ export default function VoiceRecorder({ onSend, disabled }) {
     try {
       s = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      alert('Micro inaccessible : autorise le microphone pour un message vocal.');
+      alert('Micro inaccessible : autorisez le microphone pour un message vocal.');
       return;
     }
     stream.current = s;

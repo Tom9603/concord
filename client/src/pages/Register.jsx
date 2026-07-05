@@ -28,7 +28,7 @@ export default function Register() {
       <form className="auth-card" onSubmit={submit}>
         <Logo />
         <h1>Créer un compte</h1>
-        <p className="subtitle">Rejoins Pulsar en quelques secondes.</p>
+        <p className="subtitle">Rejoignez Pulsar en quelques secondes.</p>
 
         {error && <div className="error-msg">{error}</div>}
 
@@ -38,7 +38,7 @@ export default function Register() {
         </div>
         <div className="field">
           <label>Nom affiché <span style={{ textTransform: 'none', color: 'var(--text-faint)' }}>(optionnel)</span></label>
-          <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Ton pseudo visible" />
+          <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Votre nom affiché" />
         </div>
         <div className="field">
           <label>Mot de passe</label>

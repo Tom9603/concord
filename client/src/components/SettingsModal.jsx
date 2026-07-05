@@ -74,7 +74,7 @@ export default function SettingsModal({ onClose }) {
   }
 
   async function deleteAccount() {
-    if (!confirm('Supprimer définitivement ton compte ? Cette action est irréversible.')) return;
+    if (!confirm('Supprimer définitivement votre compte ? Cette action est irréversible.')) return;
     try {
       await api('/users/me', { method: 'DELETE', body: { password: delPw } });
       logout();
@@ -100,8 +100,8 @@ export default function SettingsModal({ onClose }) {
           </div>
           <div className="field" style={{ marginTop: 24, borderTop: '1px solid var(--bg-active)', paddingTop: 16 }}>
             <label style={{ color: 'var(--danger)' }}>Zone dangereuse</label>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>Supprimer ton compte efface tout définitivement.</p>
-            <input type="password" placeholder="Confirme ton mot de passe" value={delPw} onChange={(e) => setDelPw(e.target.value)} />
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>Supprimer votre compte efface tout définitivement.</p>
+            <input type="password" placeholder="Confirmez votre mot de passe" value={delPw} onChange={(e) => setDelPw(e.target.value)} />
             <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px', marginTop: 8 }} onClick={deleteAccount}>Supprimer mon compte</button>
           </div>
           <div className="modal-actions">
@@ -168,7 +168,7 @@ export default function SettingsModal({ onClose }) {
 
       <div className="field">
         <label>À propos de moi</label>
-        <textarea rows={3} maxLength={300} value={about} onChange={(e) => setAbout(e.target.value)} placeholder="Parle un peu de toi…" />
+        <textarea rows={3} maxLength={300} value={about} onChange={(e) => setAbout(e.target.value)} placeholder="Présentez-vous en quelques mots…" />
       </div>
 
       <div className="modal-actions">

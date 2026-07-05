@@ -13,7 +13,7 @@ export default function VoiceView({ channel, members, currentUser, connected, mu
       <div className="voice-title">Salon vocal</div>
 
       {members.length === 0 ? (
-        <p className="voice-note">Personne dans ce salon. Rejoins-le pour discuter en vocal avec les autres membres.</p>
+        <p className="voice-note">Personne dans ce salon. Rejoignez-le pour discuter en vocal avec les autres membres.</p>
       ) : (
         <div className="voice-grid">
           {members.map((m) => (
@@ -22,7 +22,7 @@ export default function VoiceView({ channel, members, currentUser, connected, mu
               <span className="vname">
                 {m.muted && <span title="Micro coupé">🔇 </span>}
                 {m.user.display_name}
-                {m.userId === currentUser.id && ' (toi)'}
+                {m.userId === currentUser.id && ' (vous)'}
               </span>
             </div>
           ))}
@@ -45,7 +45,7 @@ export default function VoiceView({ channel, members, currentUser, connected, mu
       <Soundboard channelId={channel.id} serverId={channel.server_id} />
 
       <p className="voice-note" style={{ fontSize: 12, opacity: 0.7 }}>
-        🎧 Audio en temps réel (WebRTC). Autorise ton micro à la première connexion.
+        🎧 Audio en temps réel (WebRTC). Autorisez votre micro à la première connexion.
         Le contour vert autour d’un membre indique qu’il parle.
       </p>
     </div>

@@ -59,7 +59,7 @@ export default function RolesModal({ serverId, roles, onClose, onChanged }) {
   return (
     <Modal onClose={onClose}>
       <h2>Rôles du serveur</h2>
-      <p className="modal-sub">Crée des rôles et coche les permissions à accorder aux membres qui les portent.</p>
+      <p className="modal-sub">Créez des rôles et cochez les permissions à accorder aux membres qui les portent.</p>
       {error && <div className="error-msg">{error}</div>}
 
       <div style={{ display: 'flex', gap: 16 }}>
@@ -117,7 +117,7 @@ export default function RolesModal({ serverId, roles, onClose, onChanged }) {
               </div>
             </>
           ) : (
-            <p style={{ color: 'var(--text-muted)' }}>Sélectionne un rôle ou crées-en un nouveau.</p>
+            <p style={{ color: 'var(--text-muted)' }}>Sélectionnez un rôle ou créez-en un nouveau.</p>
           )}
         </div>
       </div>
