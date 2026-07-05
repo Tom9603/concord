@@ -24,7 +24,7 @@ afterPack: desktop/afterPack.cjs
 publish:
   provider: github
   owner: Tom9603
-  repo: concord
+  repo: pulsar
 
 win:
   target: [nsis]
@@ -41,8 +41,8 @@ mac:
   identity: null # pas de signature (version de test)
   # Indispensable : sans ces descriptions, macOS refuse/plante l'accès micro & caméra.
   extendInfo:
-    NSMicrophoneUsageDescription: Pulsar utilise ton microphone pour les salons vocaux.
-    NSCameraUsageDescription: Pulsar peut utiliser ta caméra pour la vidéo.
+    NSMicrophoneUsageDescription: Pulsar utilise votre microphone pour les salons vocaux.
+    NSCameraUsageDescription: Pulsar peut utiliser votre caméra pour la vidéo.
 
 linux:
   target: [AppImage]
