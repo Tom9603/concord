@@ -9,6 +9,7 @@ import Attachment from './Attachment.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
 import SaveButton from './SaveButton.jsx';
 import WatchTogether from './WatchTogether.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -33,6 +34,7 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
   const [replyingTo, setReplyingTo] = useState(null);
   const [showPins, setShowPins] = useState(false);
   const [pins, setPins] = useState([]);
+  const [confirmDel, setConfirmDel] = useState(null);
   const scrollRef = useRef(null);
   const typingTimers = useRef({});
   const lastTypingSent = useRef(0);
@@ -110,7 +112,7 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
   }
 
   const react = (messageId, emoji) => { getSocket().emit('reaction:toggle', { messageId, emoji }); setPickerFor(null); setPickerFull(false); };
-  const del = (m) => { if (confirm('Supprimer ce message ?')) getSocket().emit('message:delete', { messageId: m.id }); };
+  const del = (m) => setConfirmDel(m);
   const pin = (m) => getSocket().emit('message:pin', { messageId: m.id, pinned: !m.pinned });
   const startEdit = (m) => { setEditingId(m.id); setEditText(m.content); };
   function submitEdit(m) {
@@ -157,9 +159,9 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
           const isOwn = m.user_id === currentUser.id;
           const editing = editingId === m.id;
           return (
-            <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''}`} key={m.id}>
+            <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''}`} key={m.id}>
               {grouped ? (
-                <div className="gutter gutter-time">{formatTime(m.created_at)}</div>
+                <div className="gutter gutter-time">{m.deleted ? '' : formatTime(m.created_at)}</div>
               ) : (
                 <Avatar user={m} size={40} onClick={() => onOpenProfile?.(m.user_id)} />
               )}
@@ -178,7 +180,9 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                   </div>
                 )}
 
-                {editing ? (
+                {m.deleted ? (
+                  <div className="msg-tombstone"><Icon name="ban" /> Message supprimé</div>
+                ) : editing ? (
                   <input
                     className="msg-edit-input"
                     autoFocus
@@ -192,17 +196,13 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                   />
                 ) : (
                   <>
-                    {m.content && (
-                      <div className="msg-text">
-                        {renderRich(m.content, currentUser)}
-                        {m.edited ? <span className="msg-edited"> (modifié)</span> : null}
-                      </div>
-                    )}
+                    {m.content && <div className="msg-text">{renderRich(m.content, currentUser)}</div>}
                     {m.attachment_url && <Attachment url={m.attachment_url} name={m.attachment_name} />}
+                    {m.edited ? <div className="msg-edited">modifié</div> : null}
                   </>
                 )}
 
-                {m.reactions?.length > 0 && (
+                {!m.deleted && m.reactions?.length > 0 && (
                   <div className="reactions">
                     {m.reactions.map((r) => (
                       <button
@@ -217,7 +217,7 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                 )}
               </div>
 
-              {!editing && (
+              {!editing && !m.deleted && (
                 <div className="msg-actions">
                   <button title="Réagir" onClick={() => (pickerFor === m.id ? setPickerFor(null) : openPicker(m.id))}><Icon name="face-smile" /></button>
                   <button title="Répondre" onClick={() => setReplyingTo(m)}><Icon name="reply" /></button>
@@ -231,7 +231,7 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                       source_label: channel.name,
                     })}><Icon name="square-check" /></button>
                   )}
-                  <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={channel.name} />
+                  <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={channel.name} sourceMessageId={m.id} />
                   {canManage && <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}><Icon name="thumbtack" /></button>}
                   {isOwn && <button title="Modifier" onClick={() => startEdit(m)}><Icon name="pen" /></button>}
                   {(isOwn || canManage) && <button title="Supprimer" onClick={() => del(m)}><Icon name="trash" /></button>}
@@ -268,6 +268,11 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
         onSendAttachment={(url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name })}
         onTyping={onTyping}
       />
+
+      {confirmDel && (
+        <ConfirmModal title="Supprimer ce message ?" message="Le message sera remplacé par « Message supprimé »." confirmLabel="Supprimer" danger
+          onConfirm={() => getSocket().emit('message:delete', { messageId: confirmDel.id })} onClose={() => setConfirmDel(null)} />
+      )}
     </div>
   );
 }

@@ -70,7 +70,7 @@ export function replyPreview(id) {
 /** Message de salon complet (auteur + pièce jointe + réactions + réponse + épinglé). */
 export function fullMessage(id) {
   const m = db.prepare(`
-    SELECT m.id, m.content, m.created_at, m.user_id, m.edited, m.attachment_url, m.attachment_name,
+    SELECT m.id, m.content, m.created_at, m.user_id, m.edited, m.deleted, m.attachment_url, m.attachment_name,
            m.reply_to_id, m.pinned, m.channel_id,
            u.username, u.display_name, u.avatar_color, u.avatar_url
     FROM messages m JOIN users u ON u.id = m.user_id WHERE m.id = ?
@@ -78,6 +78,43 @@ export function fullMessage(id) {
   if (m) {
     m.reactions = reactionsFor(id);
     m.reply_to = replyPreview(m.reply_to_id);
+  }
+  return m;
+}
+
+/** Réactions agrégées d'un message privé. */
+export function dmReactionsFor(messageId) {
+  const rows = db.prepare('SELECT emoji, user_id FROM dm_reactions WHERE message_id = ?').all(messageId);
+  const map = new Map();
+  for (const r of rows) {
+    if (!map.has(r.emoji)) map.set(r.emoji, []);
+    map.get(r.emoji).push(r.user_id);
+  }
+  return Array.from(map, ([emoji, userIds]) => ({ emoji, count: userIds.length, userIds }));
+}
+
+/** Aperçu d'un message privé référencé (réponses). */
+export function dmReplyPreview(id) {
+  if (!id) return null;
+  const r = db.prepare(`
+    SELECT d.id, d.content, d.attachment_url, u.display_name
+    FROM dm_messages d JOIN users u ON u.id = d.sender_id WHERE d.id = ?
+  `).get(id);
+  if (!r) return null;
+  return { id: r.id, display_name: r.display_name, content: r.content, attachment_url: r.attachment_url };
+}
+
+/** Message privé complet (auteur, pièce jointe, réactions, réponse, édité, supprimé). */
+export function fullDm(id) {
+  const m = db.prepare(`
+    SELECT d.id, d.content, d.created_at, d.sender_id, d.recipient_id, d.attachment_url, d.attachment_name,
+           d.reply_to_id, d.edited, d.deleted, d.pinned,
+           u.username, u.display_name, u.avatar_color, u.avatar_url
+    FROM dm_messages d JOIN users u ON u.id = d.sender_id WHERE d.id = ?
+  `).get(id);
+  if (m) {
+    m.reactions = dmReactionsFor(id);
+    m.reply_to = dmReplyPreview(m.reply_to_id);
   }
   return m;
 }
@@ -215,8 +252,10 @@ export function setupSocket(io) {
       if (!m) return;
       const allowed = m.user_id === userId || hasPermission(m.server_id, userId, 'MANAGE_CHANNELS');
       if (!allowed) return;
-      db.prepare('DELETE FROM messages WHERE id = ?').run(messageId);
-      io.to('server:' + m.server_id).emit('message:deleted', { channelId: m.channel_id, messageId: Number(messageId) });
+      db.prepare("UPDATE messages SET deleted = 1, content = '', attachment_url = NULL, attachment_name = NULL, pinned = 0 WHERE id = ?").run(messageId);
+      db.prepare('DELETE FROM message_reactions WHERE message_id = ?').run(messageId);
+      io.to('server:' + m.server_id).emit('message:updated', { channelId: m.channel_id, message: fullMessage(messageId) });
+      io.to('server:' + m.server_id).emit('pins:changed', { channelId: m.channel_id });
     });
 
     socket.on('reaction:toggle', ({ messageId, emoji }) => {
@@ -243,7 +282,7 @@ export function setupSocket(io) {
     // ------------------------------------------------------------------
     // Messages privés (DM)
     // ------------------------------------------------------------------
-    socket.on('dm:send', ({ toUserId, content, attachmentUrl, attachmentName }) => {
+    socket.on('dm:send', ({ toUserId, content, attachmentUrl, attachmentName, replyTo }) => {
       const text = (content || '').trim().slice(0, 2000);
       const attach = validAttachment(attachmentUrl);
       if ((!text && !attach) || !toUserId) return;
@@ -255,17 +294,57 @@ export function setupSocket(io) {
       ).get(userId, recipient.id, recipient.id, userId);
       if (blocked) { socket.emit('dm:blocked', { toUserId: recipient.id }); return; }
 
+      let replyId = null;
+      if (replyTo) {
+        const r = db.prepare(`SELECT id FROM dm_messages WHERE id = @id
+          AND ((sender_id = @me AND recipient_id = @other) OR (sender_id = @other AND recipient_id = @me))`)
+          .get({ id: replyTo, me: userId, other: recipient.id });
+        if (r) replyId = r.id;
+      }
       const name = attach && typeof attachmentName === 'string' ? attachmentName.slice(0, 120) : null;
-      const info = db.prepare('INSERT INTO dm_messages (sender_id, recipient_id, content, attachment_url, attachment_name) VALUES (?, ?, ?, ?, ?)')
-        .run(userId, recipient.id, text, attach, name);
-      const message = db.prepare(`
-        SELECT d.id, d.content, d.created_at, d.sender_id, d.recipient_id, d.attachment_url, d.attachment_name,
-               u.username, u.display_name, u.avatar_color, u.avatar_url
-        FROM dm_messages d JOIN users u ON u.id = d.sender_id WHERE d.id = ?
-      `).get(info.lastInsertRowid);
+      const info = db.prepare('INSERT INTO dm_messages (sender_id, recipient_id, content, attachment_url, attachment_name, reply_to_id) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(userId, recipient.id, text, attach, name, replyId);
+      const message = fullDm(info.lastInsertRowid);
 
       io.to('user:' + recipient.id).emit('dm:new', { message });
       io.to('user:' + userId).emit('dm:new', { message });
+    });
+
+    // Récupère un message privé si l'utilisateur en est un des deux participants.
+    const myDm = (messageId) => {
+      const m = db.prepare('SELECT * FROM dm_messages WHERE id = ?').get(messageId);
+      return m && (m.sender_id === userId || m.recipient_id === userId) ? m : null;
+    };
+    const emitDm = (m, event, payload) => {
+      io.to('user:' + m.sender_id).emit(event, payload);
+      io.to('user:' + m.recipient_id).emit(event, payload);
+    };
+
+    socket.on('dm:edit', ({ messageId, content }) => {
+      const text = (content || '').trim().slice(0, 2000);
+      if (!text) return;
+      const m = myDm(messageId);
+      if (!m || m.sender_id !== userId || m.deleted) return;
+      db.prepare('UPDATE dm_messages SET content = ?, edited = 1 WHERE id = ?').run(text, messageId);
+      emitDm(m, 'dm:updated', { message: fullDm(messageId) });
+    });
+
+    socket.on('dm:delete', ({ messageId }) => {
+      const m = myDm(messageId);
+      if (!m || m.sender_id !== userId) return;
+      db.prepare("UPDATE dm_messages SET deleted = 1, content = '', attachment_url = NULL, attachment_name = NULL, pinned = 0 WHERE id = ?").run(messageId);
+      db.prepare('DELETE FROM dm_reactions WHERE message_id = ?').run(messageId);
+      emitDm(m, 'dm:updated', { message: fullDm(messageId) });
+    });
+
+    socket.on('dm:react', ({ messageId, emoji }) => {
+      if (!emoji || String(emoji).length > 12) return;
+      const m = myDm(messageId);
+      if (!m || m.deleted) return;
+      const exists = db.prepare('SELECT 1 FROM dm_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?').get(messageId, userId, emoji);
+      if (exists) db.prepare('DELETE FROM dm_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?').run(messageId, userId, emoji);
+      else db.prepare('INSERT INTO dm_reactions (message_id, user_id, emoji) VALUES (?, ?, ?)').run(messageId, userId, emoji);
+      emitDm(m, 'dm:reaction', { messageId: Number(messageId), reactions: dmReactionsFor(messageId) });
     });
 
     socket.on('dm:typing', ({ toUserId }) => {

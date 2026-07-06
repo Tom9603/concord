@@ -24,11 +24,11 @@ router.get('/', (req, res) => {
 
 /** Enregistrer un message (avec rappel optionnel dans `remindInSeconds`). */
 router.post('/', (req, res) => {
-  const { content, attachment_url, author_name, source } = req.body || {};
+  const { content, attachment_url, author_name, source, source_message_id } = req.body || {};
   const remindAt = resolveRemindAt(req.body || {});
   const info = db.prepare(
-    'INSERT INTO saved_messages (user_id, content, attachment_url, author_name, source, remind_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(req.userId, (content || '').slice(0, 2000), attachment_url || null, author_name || null, source || null, remindAt);
+    'INSERT INTO saved_messages (user_id, content, attachment_url, author_name, source, remind_at, source_message_id) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(req.userId, (content || '').slice(0, 2000), attachment_url || null, author_name || null, source || null, remindAt, source_message_id || null);
   res.json({ item: db.prepare('SELECT * FROM saved_messages WHERE id = ?').get(info.lastInsertRowid) });
 });
 

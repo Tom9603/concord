@@ -9,7 +9,7 @@ const router = Router();
 router.use(authMiddleware);
 
 const MESSAGE_COLS = `
-  m.id, m.content, m.created_at, m.user_id, m.edited, m.attachment_url, m.attachment_name,
+  m.id, m.content, m.created_at, m.user_id, m.edited, m.deleted, m.attachment_url, m.attachment_name,
   m.reply_to_id, m.pinned, u.username, u.display_name, u.avatar_color, u.avatar_url
 `;
 

@@ -186,6 +186,13 @@ db.exec(`
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS dm_reactions (
+    message_id INTEGER NOT NULL REFERENCES dm_messages(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    emoji      TEXT NOT NULL,
+    PRIMARY KEY (message_id, user_id, emoji)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id, id);
   CREATE INDEX IF NOT EXISTS idx_members_user ON server_members(user_id);
   CREATE INDEX IF NOT EXISTS idx_member_roles ON member_roles(server_id, user_id);
@@ -209,8 +216,14 @@ ensure('messages', 'attachment_url', 'TEXT');
 ensure('messages', 'attachment_name', 'TEXT');
 ensure('messages', 'reply_to_id', 'INTEGER');
 ensure('messages', 'pinned', 'INTEGER NOT NULL DEFAULT 0');
+ensure('messages', 'deleted', 'INTEGER NOT NULL DEFAULT 0'); // suppression douce (pierre tombale)
 ensure('dm_messages', 'attachment_url', 'TEXT');
 ensure('dm_messages', 'attachment_name', 'TEXT');
+ensure('dm_messages', 'reply_to_id', 'INTEGER');
+ensure('dm_messages', 'edited', 'INTEGER NOT NULL DEFAULT 0');
+ensure('dm_messages', 'deleted', 'INTEGER NOT NULL DEFAULT 0');
+ensure('dm_messages', 'pinned', 'INTEGER NOT NULL DEFAULT 0');
+ensure('saved_messages', 'source_message_id', 'INTEGER'); // message d'origine (surlignage perso)
 ensure('channels', 'category_id', 'INTEGER');
 ensure('channels', 'client_label', 'TEXT');            // projet / client rattaché au salon
 ensure('channels', 'private', 'INTEGER NOT NULL DEFAULT 0'); // salon restreint (espace client)

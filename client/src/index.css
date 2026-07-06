@@ -611,7 +611,10 @@ textarea { resize: none; }
 }
 
 /* Message : marqueur « modifié », image, édition */
-.msg-edited { font-size: 10px; color: var(--text-faint); }
+.msg-edited { display: block; text-align: right; font-size: 10px; font-style: italic; color: var(--text-faint); margin-top: 2px; }
+.msg-tombstone { font-size: 13px; font-style: italic; color: var(--text-faint); display: flex; align-items: center; gap: 7px; padding: 2px 0; }
+.message.is-deleted:hover { background: none; }
+.message.is-reply { background: rgba(59, 130, 246, 0.06); border-left: 2px solid rgba(59, 130, 246, 0.4); }
 .msg-image {
   display: block;
   margin-top: 4px;

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import db from '../db.js';
 import { authMiddleware, publicUser } from '../auth.js';
+import { dmReactionsFor, dmReplyPreview } from '../socket.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -49,12 +50,18 @@ router.get('/:userId/messages', (req, res) => {
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
   const rows = db.prepare(`
     SELECT d.id, d.content, d.created_at, d.sender_id, d.recipient_id, d.attachment_url, d.attachment_name,
+           d.reply_to_id, d.edited, d.deleted, d.pinned,
            u.username, u.display_name, u.avatar_color, u.avatar_url
     FROM dm_messages d JOIN users u ON u.id = d.sender_id
     WHERE (d.sender_id = @me AND d.recipient_id = @other)
        OR (d.sender_id = @other AND d.recipient_id = @me)
     ORDER BY d.id DESC LIMIT @limit
   `).all({ me: req.userId, other: otherId, limit });
+
+  for (const m of rows) {
+    m.reactions = dmReactionsFor(m.id);
+    m.reply_to = dmReplyPreview(m.reply_to_id);
+  }
 
   res.json({ user: publicUser(other), messages: rows.reverse() });
 });

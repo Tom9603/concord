@@ -17,13 +17,13 @@ const OPTIONS = [
 ];
 
 /** Bouton « enregistrer / me rappeler ce message » (rappel relatif ou date précise). */
-export default function SaveButton({ content, attachmentUrl, authorName, source }) {
+export default function SaveButton({ content, attachmentUrl, authorName, source, sourceMessageId }) {
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState('');
   const [custom, setCustom] = useState('');
 
   async function save({ secs, remindAt }) {
-    const body = { content, attachment_url: attachmentUrl, author_name: authorName, source };
+    const body = { content, attachment_url: attachmentUrl, author_name: authorName, source, source_message_id: sourceMessageId };
     if (remindAt) body.remindAt = remindAt;
     else body.remindInSeconds = secs === null ? untilTomorrow9() : secs;
     try {

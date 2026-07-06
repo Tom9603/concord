@@ -6,17 +6,27 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Composer from './Composer.jsx';
 import Attachment from './Attachment.jsx';
+import EmojiPicker from './EmojiPicker.jsx';
 import SaveButton from './SaveButton.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
+
+const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
 function formatTime(ts) {
   const d = new Date(ts.replace(' ', 'T') + 'Z');
   return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
-/** Conversation privée avec un utilisateur (texte, images, GIF, vocal, appel). */
-export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile }) {
+/** Conversation privée : mêmes options qu'un salon (réponse, réactions, tâche, rappel, édition…). */
+export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile, onCreateTask }) {
   const [messages, setMessages] = useState([]);
   const [peerTyping, setPeerTyping] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [pickerFor, setPickerFor] = useState(null);
+  const [pickerFull, setPickerFull] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [confirmDel, setConfirmDel] = useState(null);
   const scrollRef = useRef(null);
   const typingTimer = useRef(null);
   const lastTypingSent = useRef(0);
@@ -24,21 +34,17 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
 
   useEffect(() => {
     let cancelled = false;
-    setMessages([]);
-    api(`/dms/${peer.id}/messages`).then(({ messages }) => {
-      if (!cancelled) setMessages(messages);
-    });
+    setMessages([]); setReplyingTo(null); setEditingId(null);
+    api(`/dms/${peer.id}/messages`).then(({ messages }) => { if (!cancelled) setMessages(messages); });
     return () => { cancelled = true; };
   }, [peer.id]);
 
   useEffect(() => {
     const socket = getSocket();
-    const onNew = ({ message }) => {
-      const involvesPeer =
-        (message.sender_id === peer.id && message.recipient_id === currentUser.id) ||
-        (message.sender_id === currentUser.id && message.recipient_id === peer.id);
-      if (involvesPeer) setMessages((prev) => [...prev, message]);
-    };
+    const involvesPeer = (m) => (m.sender_id === peer.id && m.recipient_id === currentUser.id) || (m.sender_id === currentUser.id && m.recipient_id === peer.id);
+    const onNew = ({ message }) => { if (involvesPeer(message)) setMessages((prev) => [...prev, message]); };
+    const onUpdated = ({ message }) => { if (involvesPeer(message)) setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m))); };
+    const onReaction = ({ messageId, reactions }) => setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
     const onTyping = ({ fromUserId }) => {
       if (fromUserId !== peer.id) return;
       setPeerTyping(true);
@@ -46,25 +52,23 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
       typingTimer.current = setTimeout(() => setPeerTyping(false), 4000);
     };
     socket.on('dm:new', onNew);
+    socket.on('dm:updated', onUpdated);
+    socket.on('dm:reaction', onReaction);
     socket.on('dm:typing', onTyping);
-    return () => {
-      socket.off('dm:new', onNew);
-      socket.off('dm:typing', onTyping);
-    };
+    return () => { socket.off('dm:new', onNew); socket.off('dm:updated', onUpdated); socket.off('dm:reaction', onReaction); socket.off('dm:typing', onTyping); };
   }, [peer.id, currentUser.id]);
 
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, peerTyping]);
+  useEffect(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, [messages, peerTyping]);
 
   function onTypingSignal() {
     const now = Date.now();
-    if (now - lastTypingSent.current > 2000) {
-      lastTypingSent.current = now;
-      getSocket().emit('dm:typing', { toUserId: peer.id });
-    }
+    if (now - lastTypingSent.current > 2000) { lastTypingSent.current = now; getSocket().emit('dm:typing', { toUserId: peer.id }); }
   }
+
+  const react = (messageId, emoji) => { getSocket().emit('dm:react', { messageId, emoji }); setPickerFor(null); setPickerFull(false); };
+  const startEdit = (m) => { setEditingId(m.id); setEditText(m.content); };
+  function submitEdit(m) { const t = editText.trim(); if (t && t !== m.content) getSocket().emit('dm:edit', { messageId: m.id, content: t }); setEditingId(null); }
+  const send = (extra) => getSocket().emit('dm:send', { toUserId: peer.id, replyTo: replyingTo?.id, ...extra });
 
   return (
     <div className="main-content">
@@ -88,42 +92,88 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
 
             {messages.map((m, i) => {
               const prev = messages[i - 1];
-              const grouped = prev && prev.sender_id === m.sender_id && !m.attachment_url;
+              const grouped = prev && prev.sender_id === m.sender_id && !m.attachment_url && !m.reply_to && !m.deleted;
+              const isOwn = m.sender_id === currentUser.id;
+              const editing = editingId === m.id;
               return (
-                <div className={`message ${grouped ? 'grouped' : ''}`} key={m.id}>
-                  {grouped ? (
-                    <div className="gutter gutter-time">{formatTime(m.created_at)}</div>
-                  ) : (
-                    <Avatar user={m} size={40} onClick={() => onOpenProfile?.(m.sender_id)} />
-                  )}
+                <div className={`message ${grouped ? 'grouped' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''}`} key={m.id}>
+                  {grouped ? <div className="gutter gutter-time">{m.deleted ? '' : formatTime(m.created_at)}</div> : <Avatar user={m} size={40} onClick={() => onOpenProfile?.(m.sender_id)} />}
                   <div className="msg-body">
+                    {m.reply_to && (
+                      <div className="reply-preview"><Icon name="reply" /> <strong>{m.reply_to.display_name}</strong> <span>{m.reply_to.content ? m.reply_to.content.slice(0, 60) : 'pièce jointe'}</span></div>
+                    )}
                     {!grouped && (
                       <div className="msg-head">
                         <span className="msg-author clickable" onClick={() => onOpenProfile?.(m.sender_id)}>{m.display_name}</span>
                         <span className="msg-time">{formatTime(m.created_at)}</span>
                       </div>
                     )}
-                    {m.content && <div className="msg-text">{renderRich(m.content, currentUser)}</div>}
-                    {m.attachment_url && <Attachment url={m.attachment_url} name={m.attachment_name} />}
+                    {m.deleted ? (
+                      <div className="msg-tombstone"><Icon name="ban" /> Message supprimé</div>
+                    ) : editing ? (
+                      <input className="msg-edit-input" autoFocus value={editText} onChange={(e) => setEditText(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') submitEdit(m); if (e.key === 'Escape') setEditingId(null); }} onBlur={() => setEditingId(null)} />
+                    ) : (
+                      <>
+                        {m.content && <div className="msg-text">{renderRich(m.content, currentUser)}</div>}
+                        {m.attachment_url && <Attachment url={m.attachment_url} name={m.attachment_name} />}
+                        {m.edited ? <div className="msg-edited">modifié</div> : null}
+                      </>
+                    )}
+                    {!m.deleted && m.reactions?.length > 0 && (
+                      <div className="reactions">
+                        {m.reactions.map((r) => (
+                          <button key={r.emoji} className={`reaction-chip ${r.userIds.includes(currentUser.id) ? 'reacted' : ''}`} onClick={() => react(m.id, r.emoji)}>{r.emoji} {r.count}</button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="msg-actions">
-                    <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`@${peer.username}`} />
-                  </div>
+
+                  {!editing && !m.deleted && (
+                    <div className="msg-actions">
+                      <button title="Réagir" onClick={() => (pickerFor === m.id ? setPickerFor(null) : (setPickerFor(m.id), setPickerFull(false)))}><Icon name="face-smile" /></button>
+                      <button title="Répondre" onClick={() => setReplyingTo(m)}><Icon name="reply" /></button>
+                      {onCreateTask && (
+                        <button title="Créer une tâche depuis ce message" onClick={() => onCreateTask({
+                          title: (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 140),
+                          description: m.content && m.content.length > 140 ? m.content : '',
+                          source_message_id: m.id, source_label: `@${peer.username}`,
+                        })}><Icon name="square-check" /></button>
+                      )}
+                      <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`@${peer.username}`} sourceMessageId={m.id} />
+                      {isOwn && <button title="Modifier" onClick={() => startEdit(m)}><Icon name="pen" /></button>}
+                      {isOwn && <button title="Supprimer" onClick={() => setConfirmDel(m)}><Icon name="trash" /></button>}
+                      {pickerFor === m.id && !pickerFull && (
+                        <div className="emoji-picker">
+                          {QUICK_EMOJIS.map((e) => <button key={e} onClick={() => react(m.id, e)}>{e}</button>)}
+                          <button className="emoji-more" title="Plus" onClick={() => setPickerFull(true)}><Icon name="plus" /></button>
+                        </div>
+                      )}
+                      {pickerFor === m.id && pickerFull && (
+                        <div className="emoji-pop"><EmojiPicker onPick={(e) => react(m.id, e)} onClose={() => setPickerFor(null)} /></div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
-          <div className="typing-line">
-            {peerTyping && `${peer.display_name} est en train d’écrire…`}
-          </div>
+          <div className="typing-line">{peerTyping && `${peer.display_name} est en train d’écrire…`}</div>
 
           <Composer
             placeholder={`Envoyer un message à ${peer.display_name}`}
-            onSendText={(t) => getSocket().emit('dm:send', { toUserId: peer.id, content: t })}
-            onSendAttachment={(url, text, name) => getSocket().emit('dm:send', { toUserId: peer.id, content: text || '', attachmentUrl: url, attachmentName: name })}
+            replyingTo={replyingTo}
+            onClearReply={() => setReplyingTo(null)}
+            onSendText={(t) => send({ content: t })}
+            onSendAttachment={(url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name })}
             onTyping={onTypingSignal}
           />
+
+          {confirmDel && (
+            <ConfirmModal title="Supprimer ce message ?" message="Le message sera remplacé par « Message supprimé »." confirmLabel="Supprimer" danger
+              onConfirm={() => getSocket().emit('dm:delete', { messageId: confirmDel.id })} onClose={() => setConfirmDel(null)} />
+          )}
         </div>
       </div>
     </div>
