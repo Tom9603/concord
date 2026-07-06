@@ -31,6 +31,7 @@ import ChannelAccessModal from '../components/ChannelAccessModal.jsx';
 import ServerTasksModal from '../components/ServerTasksModal.jsx';
 import ProfileModal from '../components/ProfileModal.jsx';
 import EditProfileModal from '../components/EditProfileModal.jsx';
+import FeedbackModal from '../components/FeedbackModal.jsx';
 import SearchModal from '../components/SearchModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
 import Whiteboard from '../components/Whiteboard.jsx';
@@ -383,6 +384,7 @@ export default function AppLayout() {
           onSection={onSection}
           onSelectServer={openServer}
           onAddServer={() => setModal('create')}
+          onFeedback={() => setModal('feedback')}
         />
 
         {section === 'server' && detail && (
@@ -499,6 +501,7 @@ export default function AppLayout() {
           onOpenProfile={(id) => setProfileTarget(id)} />
       )}
       {modal === 'editProfile' && <EditProfileModal onClose={() => setModal(null)} />}
+      {modal === 'feedback' && <FeedbackModal onClose={() => setModal(null)} />}
     </div>
   );
 }

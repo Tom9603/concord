@@ -186,6 +186,17 @@ db.exec(`
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS feedback (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type        TEXT NOT NULL DEFAULT 'suggestion',
+    subject     TEXT,
+    message     TEXT NOT NULL,
+    area        TEXT,
+    screenshots TEXT DEFAULT '[]',
+    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS dm_reactions (
     message_id INTEGER NOT NULL REFERENCES dm_messages(id) ON DELETE CASCADE,
     user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

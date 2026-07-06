@@ -9,7 +9,7 @@ const SECTIONS = [
 ];
 
 /** Rail de navigation : sections de l'app (Accueil, Messages, Contacts, À faire) + serveurs. */
-export default function NavRail({ section, servers, activeServerId, hasUnreadDm, todoCount = 0, onSection, onSelectServer, onAddServer }) {
+export default function NavRail({ section, servers, activeServerId, hasUnreadDm, todoCount = 0, onSection, onSelectServer, onAddServer, onFeedback }) {
   return (
     <nav className="navrail">
       {SECTIONS.map((s) => (
@@ -42,6 +42,11 @@ export default function NavRail({ section, servers, activeServerId, hasUnreadDm,
         ))}
         <button className="nav-server nav-add" title="Ajouter un serveur" onClick={onAddServer}><Icon name="plus" /></button>
       </div>
+
+      <button className="nav-item nav-feedback" title="Donner mon avis" onClick={onFeedback}>
+        <span className="nav-ico"><Icon name="comment-dots" /></span>
+        <span className="nav-label">Feedback</span>
+      </button>
     </nav>
   );
 }
