@@ -21,7 +21,7 @@ router.get('/', (req, res) => {
       credential: process.env.TURN_CREDENTIAL || '',
     });
   } else {
-    // TURN public gratuit (OpenRelay / Metered) — best-effort, limité, pour les tests.
+    // TURN public gratuit (OpenRelay / Metered) · best-effort, limité, pour les tests.
     iceServers.push(
       { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
       { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },

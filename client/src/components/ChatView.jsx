@@ -148,8 +148,8 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
       <div className="messages" ref={scrollRef}>
         <div className="spacer-top" />
         <div className="msg-welcome">
-          <h2># {channel.name}</h2>
-          <p>C’est le début du salon <strong>#{channel.name}</strong>. Envoyez le premier message&nbsp;!</p>
+          <h2>{channel.name}</h2>
+          <p>C’est le début du salon <strong>{channel.name}</strong>. Envoyez le premier message&nbsp;!</p>
         </div>
 
         {messages.map((m, i) => {
@@ -228,10 +228,10 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                       server_id: channel.server_id,
                       channel_id: channel.id,
                       source_message_id: m.id,
-                      source_label: `#${channel.name}`,
+                      source_label: channel.name,
                     })}><Icon name="square-check" /></button>
                   )}
-                  <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`#${channel.name}`} />
+                  <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={channel.name} />
                   {canManage && <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}><Icon name="thumbtack" /></button>}
                   {isOwn && <button title="Modifier" onClick={() => startEdit(m)}><Icon name="pen" /></button>}
                   {(isOwn || canManage) && <button title="Supprimer" onClick={() => del(m)}><Icon name="trash" /></button>}
@@ -261,7 +261,7 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
       </div>
 
       <Composer
-        placeholder={`Envoyer un message dans #${channel.name}`}
+        placeholder={`Envoyer un message dans ${channel.name}`}
         replyingTo={replyingTo}
         onClearReply={() => setReplyingTo(null)}
         onSendText={(t) => send({ content: t })}

@@ -3,7 +3,7 @@
 // On construit des nœuds React (pas de innerHTML) → pas de risque XSS.
 
 // Motif partagé sous forme de chaîne : on crée une NOUVELLE regex à chaque appel
-// (indispensable car renderRich est récursif — une regex globale partagée aurait
+// (indispensable car renderRich est récursif · une regex globale partagée aurait
 // son lastIndex corrompu par les appels imbriqués → boucle infinie).
 const TOKEN_SRC = '(```[\\s\\S]+?```)|(`[^`]+?`)|(\\*\\*[^*]+?\\*\\*)|(__[^_]+?__)|(\\*[^*]+?\\*)|(_[^_]+?_)|(~~[^~]+?~~)|(https?:\\/\\/[^\\s]+)|(@[\\w.-]+)';
 

@@ -273,7 +273,7 @@ export function setupSocket(io) {
     });
 
     // ------------------------------------------------------------------
-    // Vocal (WebRTC — audio réel en maillage peer-to-peer)
+    // Vocal (WebRTC · audio réel en maillage peer-to-peer)
     // ------------------------------------------------------------------
     socket.on('voice:join', ({ channelId }) => {
       const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(channelId);
@@ -318,7 +318,7 @@ export function setupSocket(io) {
     socket.on('voice:leave', () => removeSocketFromVoice(io, socket));
 
     // ------------------------------------------------------------------
-    // Appels vocaux privés (DM) — 1-à-1
+    // Appels vocaux privés (DM) · 1-à-1
     // ------------------------------------------------------------------
     socket.on('call:invite', ({ toUserId }) => {
       if (!toUserId || toUserId === userId) return;

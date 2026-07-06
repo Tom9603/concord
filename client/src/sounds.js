@@ -36,7 +36,7 @@ function noise(c, { dur = 0.15, gain = 0.3, delay = 0, cutoff = 1200 }) {
   src.start(t); src.stop(t + dur);
 }
 
-// Sons de base synthétisés (identifiés par un id — tout le monde joue le même).
+// Sons de base synthétisés (identifiés par un id · tout le monde joue le même).
 export const BUILTIN_SOUNDS = [
   { id: 'ding', icon: 'bell', label: 'Ding' },
   { id: 'beep', icon: 'pager', label: 'Beep' },

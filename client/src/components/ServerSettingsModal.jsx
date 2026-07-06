@@ -88,7 +88,7 @@ export default function ServerSettingsModal({ server, categories, channels = [],
           <label>Ranger les salons</label>
           {channels.filter((c) => c.type === 'text').map((c) => (
             <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '4px 0' }}>
-              <span># {c.name}</span>
+              <span>{c.name}</span>
               <select
                 value={c.category_id || ''}
                 disabled={busy}
@@ -98,7 +98,7 @@ export default function ServerSettingsModal({ server, categories, channels = [],
                   finally { setBusy(false); }
                 }}
               >
-                <option value="">— sans catégorie —</option>
+                <option value="">Sans catégorie</option>
                 {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
               </select>
             </div>

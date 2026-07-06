@@ -49,7 +49,7 @@ export default function SavedPanel({ currentUser, embedded }) {
     <div className="saved-body">
       {items.length === 0 && (
         <p className="saved-empty">
-          Aucun rappel pour l’instant. Sur n’importe quel message, cliquez sur l’icône <Icon name="bookmark" /> pour l’enregistrer ici — et vous le faire rappeler à la date de votre choix.
+          Aucun rappel pour l’instant. Sur n’importe quel message, cliquez sur l’icône <Icon name="bookmark" /> pour l’enregistrer ici, et vous le faire rappeler à la date de votre choix.
         </p>
       )}
       {items.map((it) => (

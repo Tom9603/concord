@@ -56,7 +56,7 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
 
         {data.incoming.length > 0 && (
           <section>
-            <h3>Invitations reçues — {data.incoming.length}</h3>
+            <h3>Invitations reçues · {data.incoming.length}</h3>
             {data.incoming.map((u) => (
               <Row key={u.id} u={u}>
                 <button className="btn" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => act(`/friends/${u.id}/accept`)}>Accepter</button>
@@ -67,7 +67,7 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
         )}
 
         <section>
-          <h3>Contacts — {data.friends.length}</h3>
+          <h3>Contacts · {data.friends.length}</h3>
           {data.friends.length === 0 && <p className="friends-empty">Aucun contact pour l’instant. Ajoutez-en un ci-dessus !</p>}
           {data.friends.map((u) => (
             <Row key={u.id} u={u}>
@@ -80,7 +80,7 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
 
         {data.outgoing.length > 0 && (
           <section>
-            <h3>Invitations envoyées — {data.outgoing.length}</h3>
+            <h3>Invitations envoyées · {data.outgoing.length}</h3>
             {data.outgoing.map((u) => (
               <Row key={u.id} u={u}>
                 <button className="btn btn-ghost" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => act(`/friends/${u.id}`, 'DELETE')}>Annuler</button>
@@ -91,7 +91,7 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
 
         {data.blocked.length > 0 && (
           <section>
-            <h3>Bloqués — {data.blocked.length}</h3>
+            <h3>Bloqués · {data.blocked.length}</h3>
             {data.blocked.map((u) => (
               <Row key={u.id} u={u}>
                 <button className="btn btn-ghost" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => act(`/friends/${u.id}/block`, 'DELETE')}>Débloquer</button>

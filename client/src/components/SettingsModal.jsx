@@ -17,10 +17,10 @@ const STATUSES = [
 const MENU = [
   { group: 'Mon profil', items: [{ id: 'identity', icon: 'id-card', label: 'Identité' }, { id: 'pro', icon: 'briefcase', label: 'Fiche professionnelle' }] },
   { group: 'Application', items: [{ id: 'notif', icon: 'bell', label: 'Notifications' }] },
-  { group: 'Compte', items: [{ id: 'account', icon: 'lock', label: 'Sécurité & compte' }] },
+  { group: 'Compte', items: [{ id: 'account', icon: 'lock', label: 'Sécurité et compte' }] },
 ];
 
-/** Réglages : profil, fiche pro (+ CV), notifications, compte — en menus. */
+/** Réglages : profil, fiche pro (+ CV), notifications, compte · en menus. */
 export default function SettingsModal({ onClose }) {
   const { user, updateUser, logout } = useAuth();
   const [menu, setMenu] = useState('identity');
@@ -131,6 +131,7 @@ export default function SettingsModal({ onClose }) {
         </aside>
 
         <div className="settings-content">
+          <div className="settings-scroll">
           {error && <div className="error-msg">{error}</div>}
 
           {menu === 'identity' && (
@@ -253,13 +254,14 @@ export default function SettingsModal({ onClose }) {
                 <button className="btn" style={{ width: 'auto', padding: '8px 16px', marginTop: 8 }} onClick={changePassword}>Mettre à jour</button>
               </div>
               <div className="field" style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-                <label style={{ color: 'var(--danger)' }}>Zone dangereuse</label>
+                <label style={{ color: 'var(--danger)' }}>Suppression de compte</label>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>Supprimer votre compte efface tout définitivement.</p>
                 <input type="password" placeholder="Confirmez votre mot de passe" value={delPw} onChange={(e) => setDelPw(e.target.value)} />
                 <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px', marginTop: 8 }} onClick={deleteAccount}>Supprimer mon compte</button>
               </div>
             </>
           )}
+          </div>
 
           <div className="modal-actions">
             <button className="btn btn-ghost" onClick={onClose}>Fermer</button>

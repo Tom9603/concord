@@ -181,7 +181,7 @@ function ChannelRow({ channel, active, connected, canManage, canDelete, onSelect
   const unread = channel.type === 'text' && channel.unread && !active;
   return (
     <div className={`channel-item ${active ? 'active' : ''} ${unread ? 'unread' : ''}`} onClick={onSelect}>
-      <span className="hash"><Icon name={channel.type === 'voice' ? 'volume-high' : channel.private ? 'lock' : 'hashtag'} /></span>
+      <span className="hash"><Icon name={channel.type === 'voice' ? 'volume-high' : channel.private ? 'lock' : 'align-left'} /></span>
       <span className="name">{channel.name}</span>
       {channel.client_label && <span className="channel-tag" title={`Projet / client : ${channel.client_label}`}>{channel.client_label}</span>}
       {connected && <span title="Connecté au vocal" style={{ color: 'var(--online)', fontSize: 11 }}>●</span>}

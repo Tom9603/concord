@@ -17,6 +17,7 @@ router.use(authMiddleware);
 const SERVER_COLORS = ['#5865F2', '#EB459E', '#57F287', '#FAA61A', '#ED4245', '#3498DB', '#9B59B6'];
 const randomColor = () => SERVER_COLORS[Math.floor(Math.random() * SERVER_COLORS.length)];
 const genInvite = () => randomBytes(4).toString('hex');
+const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 function isMember(serverId, userId) {
   return !!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(serverId, userId);
@@ -49,7 +50,7 @@ router.get('/', (req, res) => {
   res.json({ servers });
 });
 
-/** Création d'un serveur (avec salons par défaut) — le créateur en devient membre & propriétaire. */
+/** Création d'un serveur (avec salons par défaut) · le créateur en devient membre et propriétaire. */
 router.post('/', (req, res) => {
   const name = (req.body?.name || '').trim();
   if (!name) return res.status(400).json({ error: 'Le nom du serveur est requis' });
@@ -60,8 +61,8 @@ router.post('/', (req, res) => {
     ).run(name, randomColor(), req.userId, genInvite());
     const id = info.lastInsertRowid;
     db.prepare('INSERT INTO server_members (server_id, user_id) VALUES (?, ?)').run(id, req.userId);
-    db.prepare('INSERT INTO channels (server_id, name, type, position) VALUES (?, ?, ?, ?)').run(id, 'général', 'text', 0);
-    db.prepare('INSERT INTO channels (server_id, name, type, position) VALUES (?, ?, ?, ?)').run(id, 'hors-sujet', 'text', 1);
+    db.prepare('INSERT INTO channels (server_id, name, type, position) VALUES (?, ?, ?, ?)').run(id, 'Général', 'text', 0);
+    db.prepare('INSERT INTO channels (server_id, name, type, position) VALUES (?, ?, ?, ?)').run(id, 'Discussion', 'text', 1);
     db.prepare('INSERT INTO channels (server_id, name, type, position) VALUES (?, ?, ?, ?)').run(id, 'Salon vocal', 'voice', 2);
     return id;
   });
@@ -210,7 +211,7 @@ router.patch('/:id/channels/:channelId', requireManageChannels, (req, res) => {
   const channel = db.prepare('SELECT * FROM channels WHERE id = ? AND server_id = ?').get(req.params.channelId, req.server.id);
   if (!channel) return res.status(404).json({ error: 'Salon introuvable' });
   const catId = req.body?.category_id === undefined ? channel.category_id : (req.body.category_id || null);
-  const name = (req.body?.name ?? '').toString().trim() || channel.name;
+  const name = capitalize((req.body?.name ?? '').toString().trim()) || channel.name;
   const clientLabel = req.body?.client_label === undefined
     ? channel.client_label
     : ((req.body.client_label || '').toString().trim().slice(0, 80) || null);
@@ -253,7 +254,7 @@ router.post('/:id/channels', (req, res) => {
     return res.status(403).json({ error: 'Permission « Gérer les salons » requise' });
   }
 
-  const name = (req.body?.name || '').trim();
+  const name = capitalize((req.body?.name || '').trim());
   const type = req.body?.type === 'voice' ? 'voice' : 'text';
   if (!name) return res.status(400).json({ error: 'Le nom du salon est requis' });
 

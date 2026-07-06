@@ -40,7 +40,7 @@ export default function SearchModal({ serverId, onClose, onJump }) {
           <div className="search-item" key={r.id} onClick={() => { onJump(r.channel_id); onClose(); }}>
             <Avatar user={r} size={28} />
             <div>
-              <div className="search-meta"><strong>{r.display_name}</strong> · #{r.channel_name} · {formatDate(r.created_at)}</div>
+              <div className="search-meta"><strong>{r.display_name}</strong> · {r.channel_name} · {formatDate(r.created_at)}</div>
               <div className="search-text">{r.content}</div>
             </div>
           </div>

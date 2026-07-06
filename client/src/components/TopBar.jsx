@@ -3,21 +3,23 @@ import Logo from './Logo.jsx';
 import Icon from './Icon.jsx';
 import NotificationBell from './NotificationBell.jsx';
 
-/** Barre du haut : retour, logo (→ accueil), barre vocale, notifications, profil & réglages. */
+/** Barre du haut : retour, logo (→ accueil), barre vocale, notifications, profil et réglages. */
 export default function TopBar({
-  user, onHome, onBack, canGoBack, onOpenSettings, onOpenProfile, onLogout,
+  user, onHome, onBack, onForward, canGoBack, canGoForward, onOpenSettings, onOpenProfile, onLogout,
   voice, voiceName, onLeaveVoice,
   notifications, onOpenNotif, onMarkAllRead, onClearNotifs,
 }) {
   return (
     <header className="topbar">
-      <button className="topbar-icon topbar-back" title="Retour" onClick={onBack} disabled={!canGoBack}>
-        <Icon name="arrow-left" />
-      </button>
-
-      <button className="topbar-brand" onClick={onHome} title="Accueil">
-        <Logo size={30} row />
-      </button>
+      <div className="topbar-left">
+        <button className="topbar-brand" onClick={onHome} title="Accueil">
+          <Logo size={30} row />
+        </button>
+        <div className="topbar-nav">
+          {canGoBack && <button className="topbar-arrow" title="Retour" onClick={onBack}><Icon name="arrow-left" /></button>}
+          {canGoForward && <button className="topbar-arrow" title="Avancer" onClick={onForward}><Icon name="arrow-right" /></button>}
+        </div>
+      </div>
 
       <div className="topbar-spacer" />
 

@@ -19,19 +19,19 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
       <div className="home-inner">
         <div className="home-hero">
           <h1>{greet}, {user.display_name} <span className="home-spark">✦</span></h1>
-          <p>Bienvenue sur Pulsar — reprenez là où vous vous êtes arrêté.</p>
+          <p>Bienvenue sur Pulsar, reprenez là où vous vous êtes arrêté.</p>
         </div>
 
         <div className="home-quick">
           <button className="quick-tile" onClick={onOpenFriends}><span><Icon name="user-group" /></span> Contacts</button>
-          <button className="quick-tile" onClick={onOpenSaved}><span><Icon name="circle-check" /></span> À faire</button>
+          <button className="quick-tile" onClick={onOpenSaved}><span><Icon name="circle-check" /></span> Tasks</button>
           <button className="quick-tile add" onClick={onAddServer}><span><Icon name="plus" /></span> Nouveau serveur</button>
         </div>
 
         <section className="home-section">
           <h2>Vos serveurs</h2>
           {servers.length === 0 ? (
-            <p className="home-empty">Aucun serveur pour l’instant — créez-en un via « Nouveau serveur ».</p>
+            <p className="home-empty">Aucun serveur pour l’instant, créez-en un via « Nouveau serveur ».</p>
           ) : (
             <div className="home-grid">
               {servers.map((s) => (
@@ -67,7 +67,7 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
 
         <section className="home-section">
           <div className="home-section-head">
-            <h2>Vos contacts{contacts.length ? ` — ${contacts.length}` : ''}</h2>
+            <h2>Vos contacts{contacts.length ? ` · ${contacts.length}` : ''}</h2>
             {contacts.length > 0 && (
               <button className="home-more" onClick={() => setLibrary(true)}><Icon name="address-book" /> Voir tous mes contacts</button>
             )}

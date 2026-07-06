@@ -61,8 +61,9 @@ export default function AppLayout() {
   const [accessChannel, setAccessChannel] = useState(null);
   const [profileTarget, setProfileTarget] = useState(null); // id d'utilisateur
 
-  // Navigation « retour »
+  // Navigation « retour » / « avancer »
   const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
   const locRef = useRef(null);
   const backNav = useRef(false);
   const pendingChannelRef = useRef(null);
@@ -137,13 +138,21 @@ export default function AppLayout() {
     });
   }, [activeServerId, refreshDetail]);
 
-  // Historique de navigation (pour le bouton « Retour »).
+  // Historique de navigation (boutons « Retour » et « Avancer »).
+  const applyLocation = (loc) => {
+    backNav.current = true;
+    setSection(loc.section);
+    if (loc.activeServerId !== activeServerId) { pendingChannelRef.current = loc.activeChannelId; setActiveServerId(loc.activeServerId); }
+    else if (loc.activeChannelId) setActiveChannelId(loc.activeChannelId);
+    setActiveDm(loc.activeDm);
+  };
+
   useEffect(() => {
     const cur = { section, activeServerId, activeChannelId, activeDm };
     const prev = locRef.current;
     const changed = prev && (prev.section !== cur.section || prev.activeServerId !== cur.activeServerId
       || prev.activeChannelId !== cur.activeChannelId || (prev.activeDm?.id ?? null) !== (cur.activeDm?.id ?? null));
-    if (changed && !backNav.current) setHistory((h) => [...h.slice(-40), prev]);
+    if (changed && !backNav.current) { setHistory((h) => [...h.slice(-40), prev]); setFuture([]); }
     backNav.current = false;
     locRef.current = cur;
   }, [section, activeServerId, activeChannelId, activeDm]);
@@ -151,13 +160,17 @@ export default function AppLayout() {
   function goBack() {
     setHistory((h) => {
       if (h.length === 0) return h;
-      const prev = h[h.length - 1];
-      backNav.current = true;
-      setSection(prev.section);
-      if (prev.activeServerId !== activeServerId) { pendingChannelRef.current = prev.activeChannelId; setActiveServerId(prev.activeServerId); }
-      else if (prev.activeChannelId) setActiveChannelId(prev.activeChannelId);
-      setActiveDm(prev.activeDm);
+      setFuture((f) => [locRef.current, ...f].slice(0, 40));
+      applyLocation(h[h.length - 1]);
       return h.slice(0, -1);
+    });
+  }
+  function goForward() {
+    setFuture((f) => {
+      if (f.length === 0) return f;
+      setHistory((h) => [...h, locRef.current]);
+      applyLocation(f[0]);
+      return f.slice(1);
     });
   }
 
@@ -210,7 +223,7 @@ export default function AppLayout() {
       playPing();
       const peer = { id: message.sender_id, username: message.username, display_name: message.display_name, avatar_color: message.avatar_color, avatar_url: message.avatar_url, status: 'online' };
       pushNotif({ icon: 'message', tone: 'blue', title: message.display_name, body: message.content || 'Pièce jointe', nav: { type: 'dm', peer } });
-      desktopNotify(`${message.display_name} — message privé`, message.content || 'Image', () => openDm(peer));
+      desktopNotify(`${message.display_name} · message privé`, message.content || 'Image', () => openDm(peer));
     };
     const onMessageNew = ({ channelId, serverId, message }) => {
       if (message.user_id === user.id) return;
@@ -308,7 +321,9 @@ export default function AppLayout() {
         user={user}
         onHome={goHome}
         onBack={goBack}
+        onForward={goForward}
         canGoBack={history.length > 0}
+        canGoForward={future.length > 0}
         onOpenSettings={() => setModal('settings')}
         onOpenProfile={() => setProfileTarget(user.id)}
         onLogout={logout}
@@ -370,7 +385,7 @@ export default function AppLayout() {
             activeChannel ? (
               <div className="main-content">
                 <div className="content-header">
-                  <span className="hash"><Icon name={activeChannel.type === 'voice' ? 'volume-high' : activeChannel.private ? 'lock' : 'hashtag'} /></span>
+                  <span className="hash"><Icon name={activeChannel.type === 'voice' ? 'volume-high' : activeChannel.private ? 'lock' : 'align-left'} /></span>
                   <span>{activeChannel.name}</span>
                   {activeChannel.client_label && <span className="topic topic-client"><Icon name="folder-open" /> {activeChannel.client_label}</span>}
                   {activeChannel.type === 'text' && !activeChannel.client_label && <span className="topic">Salon textuel</span>}

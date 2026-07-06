@@ -38,8 +38,8 @@ export default function MemberList({ members, onlineIds, ownerId, roles = [], on
 
   return (
     <div className="member-list">
-      {renderGroup(`En ligne — ${onlineMembers.length}`, onlineMembers, true)}
-      {renderGroup(`Hors ligne — ${offlineMembers.length}`, offlineMembers, false)}
+      {renderGroup(`En ligne · ${onlineMembers.length}`, onlineMembers, true)}
+      {renderGroup(`Hors ligne · ${offlineMembers.length}`, offlineMembers, false)}
     </div>
   );
 }

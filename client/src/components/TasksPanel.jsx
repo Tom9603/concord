@@ -64,7 +64,7 @@ export default function TasksPanel({ tasks, currentUser, filter, onFilter, onTog
                         </span>
                       ) : <span className="task-unassigned">Sans responsable</span>}
                       {due && <span className={`task-due ${due.overdue && t.status !== 'done' ? 'overdue' : ''}`}><Icon name={due.overdue && t.status !== 'done' ? 'triangle-exclamation' : 'calendar'} /> {due.txt}</span>}
-                      {t.server_name && <span className="task-src">{t.channel_name ? `#${t.channel_name}` : t.server_name}</span>}
+                      {t.server_name && <span className="task-src">{t.channel_name || t.server_name}</span>}
                     </div>
                   </div>
                   <div className="task-actions">

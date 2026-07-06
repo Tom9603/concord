@@ -1,8 +1,8 @@
 # Pulsar
 
 **Pulsar** est une messagerie d'équipe en temps réel pensée pour les **professionnels**
-(TPE, PME, ESN, indépendants) : serveurs, salons textuels & vocaux, appels, et surtout
-de quoi **travailler** — transformer un message en tâche, regrouper ce qui attend une action,
+(TPE, PME, ESN, indépendants) : serveurs, salons textuels et vocaux, appels, et surtout
+de quoi **travailler** · transformer un message en tâche, regrouper ce qui attend une action,
 inviter un client sur un espace dédié, et présenter une vraie fiche professionnelle.
 
 L'esprit reste celui d'un Discord, en plus pro. La base est une application web, empaquetable
@@ -14,7 +14,7 @@ en **vraie application téléchargeable** (`.exe` / `.dmg` / `.AppImage`) via El
 |----------|--------|
 | Frontend | React + Vite (Font Awesome pour les icônes) |
 | Backend  | Node.js + Express + Socket.IO |
-| Base     | SQLite (module `node:sqlite` natif — zéro installation) |
+| Base     | SQLite (module `node:sqlite` natif · zéro installation) |
 | Auth     | JWT + mots de passe hashés (scrypt natif) |
 | Temps réel | WebSocket via Socket.IO |
 
@@ -23,7 +23,7 @@ Aucune dépendance native à compiler : SQLite et le chiffrement utilisent des m
 ## Fonctionnalités
 
 - **Comptes** : inscription / connexion, session persistante
-- **Serveurs** : création, code d'invitation, rôles & permissions, catégories, renommage, icône
+- **Serveurs** : création, code d'invitation, rôles et permissions, catégories, renommage, icône
 - **Salons** : textuels et vocaux ; **espaces clients privés** (accès restreint) + étiquette projet/client
 - **Chat** : temps réel, Markdown, réponses, modification / suppression, réactions, mentions @,
   messages épinglés, images / GIF (Tenor) / messages vocaux / fichiers
@@ -80,7 +80,7 @@ pulsar/
 │       └── context/        # AuthContext
 ├── desktop/                # App Electron (main.js, preload.js)
 ├── electron-builder.yml    # Config de packaging (Win/Mac/Linux)
-└── .github/workflows/      # CI : construit & publie les versions
+└── .github/workflows/      # CI : construit et publie les versions
 ```
 
 ## Application desktop (Electron)
