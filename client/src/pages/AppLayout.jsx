@@ -81,6 +81,13 @@ export default function AppLayout() {
   const [taskModal, setTaskModal] = useState(null); // { task } | { prefill, members }
   const todoCount = tasks.filter((t) => t.status !== 'done' && t.assignee_id === user.id).length;
 
+  // Surlignage personnel des messages transformés en tâche / rappel (visible de moi seul).
+  const [reminderMsgIds, setReminderMsgIds] = useState(() => new Set());
+  const taskMsgIds = new Set(tasks.map((t) => t.source_message_id).filter(Boolean));
+  const refreshReminderIds = useCallback(() => {
+    api('/saved').then(({ items }) => setReminderMsgIds(new Set(items.map((i) => i.source_message_id).filter(Boolean)))).catch(() => {});
+  }, []);
+
   const can = makeCan(detail?.is_owner, detail?.my_permissions);
 
   const sectionRef = useRef(section);
@@ -128,6 +135,10 @@ export default function AppLayout() {
     refreshServers();
     refreshConversations();
     refreshTasks();
+    refreshReminderIds();
+    const onSavedChanged = () => refreshReminderIds();
+    window.addEventListener('pulsar:saved-changed', onSavedChanged);
+    return () => window.removeEventListener('pulsar:saved-changed', onSavedChanged);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -386,7 +397,7 @@ export default function AppLayout() {
           )}
           {section === 'dm' && (
             activeDm
-              ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} onOpenProfile={setProfileTarget} onCreateTask={openTaskFromMessage} />
+              ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} onOpenProfile={setProfileTarget} onCreateTask={openTaskFromMessage} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} />
               : <div className="main-content"><div className="empty-hero"><h2><Icon name="comment" /> Messages</h2><p>Choisissez une conversation à gauche, ou ajoutez un contact.</p></div></div>
           )}
           {section === 'server' && (
@@ -408,7 +419,7 @@ export default function AppLayout() {
                       connected={voice.connectedChannelId === activeChannel.id} muted={voice.muted}
                       onJoin={() => joinVoice(activeChannel)} onLeave={leaveVoice} onToggleMute={voice.toggleMute} />
                   ) : (
-                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} />
+                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} />
                   )}
                 </div>
               </div>

@@ -24,7 +24,7 @@ function shouldGroup(prev, cur) {
   return gap < 5 * 60 * 1000;
 }
 
-export default function ChatView({ channel, currentUser, canManage, onCreateTask, onOpenProfile }) {
+export default function ChatView({ channel, currentUser, canManage, onCreateTask, onOpenProfile, reminderMsgIds, taskMsgIds }) {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -158,8 +158,16 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
           const grouped = shouldGroup(messages[i - 1], m);
           const isOwn = m.user_id === currentUser.id;
           const editing = editingId === m.id;
+          const nearBottom = i >= messages.length - 3;
+          const isTaskMsg = !m.deleted && taskMsgIds?.has(m.id);
+          const isReminderMsg = !m.deleted && !isTaskMsg && reminderMsgIds?.has(m.id);
           return (
-            <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''}`} key={m.id}>
+            <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''}`} key={m.id}>
+              {(isTaskMsg || isReminderMsg) && (
+                <span className={`msg-mark ${isTaskMsg ? 'task' : 'reminder'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : 'Vous avez enregistré ce message'}>
+                  <Icon name={isTaskMsg ? 'square-check' : 'bookmark'} />
+                </span>
+              )}
               {grouped ? (
                 <div className="gutter gutter-time">{m.deleted ? '' : formatTime(m.created_at)}</div>
               ) : (
@@ -231,12 +239,12 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                       source_label: channel.name,
                     })}><Icon name="square-check" /></button>
                   )}
-                  <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={channel.name} sourceMessageId={m.id} />
+                  <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={channel.name} sourceMessageId={m.id} dropUp={nearBottom} />
                   {canManage && <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}><Icon name="thumbtack" /></button>}
                   {isOwn && <button title="Modifier" onClick={() => startEdit(m)}><Icon name="pen" /></button>}
                   {(isOwn || canManage) && <button title="Supprimer" onClick={() => del(m)}><Icon name="trash" /></button>}
                   {pickerFor === m.id && !pickerFull && (
-                    <div className="emoji-picker">
+                    <div className={`emoji-picker ${nearBottom ? 'up' : ''}`}>
                       {QUICK_EMOJIS.map((e) => (
                         <button key={e} onClick={() => react(m.id, e)}>{e}</button>
                       ))}
@@ -244,7 +252,7 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                     </div>
                   )}
                   {pickerFor === m.id && pickerFull && (
-                    <div className="emoji-pop"><EmojiPicker onPick={(e) => react(m.id, e)} onClose={() => setPickerFor(null)} /></div>
+                    <div className={`emoji-pop ${nearBottom ? 'up' : ''}`}><EmojiPicker onPick={(e) => react(m.id, e)} onClose={() => setPickerFor(null)} /></div>
                   )}
                 </div>
               )}

@@ -18,7 +18,7 @@ function formatTime(ts) {
 }
 
 /** Conversation privée : mêmes options qu'un salon (réponse, réactions, tâche, rappel, édition…). */
-export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile, onCreateTask }) {
+export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile, onCreateTask, reminderMsgIds, taskMsgIds }) {
   const [messages, setMessages] = useState([]);
   const [peerTyping, setPeerTyping] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -27,6 +27,8 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
   const [pickerFull, setPickerFull] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
+  const [showPins, setShowPins] = useState(false);
+  const [pins, setPins] = useState([]);
   const scrollRef = useRef(null);
   const typingTimer = useRef(null);
   const lastTypingSent = useRef(0);
@@ -34,10 +36,14 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
 
   useEffect(() => {
     let cancelled = false;
-    setMessages([]); setReplyingTo(null); setEditingId(null);
+    setMessages([]); setReplyingTo(null); setEditingId(null); setShowPins(false);
     api(`/dms/${peer.id}/messages`).then(({ messages }) => { if (!cancelled) setMessages(messages); });
     return () => { cancelled = true; };
   }, [peer.id]);
+
+  const loadPins = () => api(`/dms/${peer.id}/pins`).then(({ messages }) => setPins(messages)).catch(() => {});
+  const togglePins = () => setShowPins((v) => { if (!v) loadPins(); return !v; });
+  const pin = (m) => getSocket().emit('dm:pin', { messageId: m.id, pinned: !m.pinned });
 
   useEffect(() => {
     const socket = getSocket();
@@ -45,6 +51,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
     const onNew = ({ message }) => { if (involvesPeer(message)) setMessages((prev) => [...prev, message]); };
     const onUpdated = ({ message }) => { if (involvesPeer(message)) setMessages((prev) => prev.map((m) => (m.id === message.id ? message : m))); };
     const onReaction = ({ messageId, reactions }) => setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
+    const onPins = () => { if (showPins) loadPins(); };
     const onTyping = ({ fromUserId }) => {
       if (fromUserId !== peer.id) return;
       setPeerTyping(true);
@@ -54,9 +61,11 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
     socket.on('dm:new', onNew);
     socket.on('dm:updated', onUpdated);
     socket.on('dm:reaction', onReaction);
+    socket.on('dm:pins-changed', onPins);
     socket.on('dm:typing', onTyping);
-    return () => { socket.off('dm:new', onNew); socket.off('dm:updated', onUpdated); socket.off('dm:reaction', onReaction); socket.off('dm:typing', onTyping); };
-  }, [peer.id, currentUser.id]);
+    return () => { socket.off('dm:new', onNew); socket.off('dm:updated', onUpdated); socket.off('dm:reaction', onReaction); socket.off('dm:pins-changed', onPins); socket.off('dm:typing', onTyping); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [peer.id, currentUser.id, showPins]);
 
   useEffect(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, [messages, peerTyping]);
 
@@ -82,6 +91,23 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
 
       <div className="content-body">
         <div className="chat-area">
+          <button className="chat-pins-btn" title="Messages épinglés" onClick={togglePins}><Icon name="thumbtack" /></button>
+          {showPins && (
+            <div className="pins-panel">
+              <div className="pins-head">Messages épinglés <button onClick={() => setShowPins(false)}><Icon name="xmark" /></button></div>
+              {pins.length === 0 && <div className="pins-empty">Aucun message épinglé.</div>}
+              {pins.map((m) => (
+                <div className="pin-item" key={m.id}>
+                  <Avatar user={m} size={28} />
+                  <div>
+                    <div className="pin-author">{m.display_name}</div>
+                    <div className="pin-text">{renderRich(m.content, currentUser) || (m.attachment_url ? 'pièce jointe' : '')}</div>
+                  </div>
+                  <button className="pin-remove" title="Détacher" onClick={() => pin(m)}><Icon name="xmark" /></button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="messages" ref={scrollRef}>
             <div className="spacer-top" />
             <div className="msg-welcome">
@@ -95,8 +121,16 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
               const grouped = prev && prev.sender_id === m.sender_id && !m.attachment_url && !m.reply_to && !m.deleted;
               const isOwn = m.sender_id === currentUser.id;
               const editing = editingId === m.id;
+              const nearBottom = i >= messages.length - 3;
+              const isTaskMsg = !m.deleted && taskMsgIds?.has(m.id);
+              const isReminderMsg = !m.deleted && !isTaskMsg && reminderMsgIds?.has(m.id);
               return (
-                <div className={`message ${grouped ? 'grouped' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''}`} key={m.id}>
+                <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned && !m.deleted ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''}`} key={m.id}>
+                  {(isTaskMsg || isReminderMsg) && (
+                    <span className={`msg-mark ${isTaskMsg ? 'task' : 'reminder'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : 'Vous avez enregistré ce message'}>
+                      <Icon name={isTaskMsg ? 'square-check' : 'bookmark'} />
+                    </span>
+                  )}
                   {grouped ? <div className="gutter gutter-time">{m.deleted ? '' : formatTime(m.created_at)}</div> : <Avatar user={m} size={40} onClick={() => onOpenProfile?.(m.sender_id)} />}
                   <div className="msg-body">
                     {m.reply_to && (
@@ -140,17 +174,18 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
                           source_message_id: m.id, source_label: `@${peer.username}`,
                         })}><Icon name="square-check" /></button>
                       )}
-                      <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`@${peer.username}`} sourceMessageId={m.id} />
+                      <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`@${peer.username}`} sourceMessageId={m.id} dropUp={nearBottom} />
+                      <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}><Icon name="thumbtack" /></button>
                       {isOwn && <button title="Modifier" onClick={() => startEdit(m)}><Icon name="pen" /></button>}
                       {isOwn && <button title="Supprimer" onClick={() => setConfirmDel(m)}><Icon name="trash" /></button>}
                       {pickerFor === m.id && !pickerFull && (
-                        <div className="emoji-picker">
+                        <div className={`emoji-picker ${nearBottom ? 'up' : ''}`}>
                           {QUICK_EMOJIS.map((e) => <button key={e} onClick={() => react(m.id, e)}>{e}</button>)}
                           <button className="emoji-more" title="Plus" onClick={() => setPickerFull(true)}><Icon name="plus" /></button>
                         </div>
                       )}
                       {pickerFor === m.id && pickerFull && (
-                        <div className="emoji-pop"><EmojiPicker onPick={(e) => react(m.id, e)} onClose={() => setPickerFor(null)} /></div>
+                        <div className={`emoji-pop ${nearBottom ? 'up' : ''}`}><EmojiPicker onPick={(e) => react(m.id, e)} onClose={() => setPickerFor(null)} /></div>
                       )}
                     </div>
                   )}

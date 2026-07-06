@@ -66,4 +66,18 @@ router.get('/:userId/messages', (req, res) => {
   res.json({ user: publicUser(other), messages: rows.reverse() });
 });
 
+/** Messages épinglés d'une conversation privée. */
+router.get('/:userId/pins', (req, res) => {
+  const otherId = Number(req.params.userId);
+  const rows = db.prepare(`
+    SELECT d.id, d.content, d.created_at, d.sender_id, d.recipient_id, d.attachment_url, d.attachment_name,
+           d.reply_to_id, d.edited, d.pinned,
+           u.username, u.display_name, u.avatar_color, u.avatar_url
+    FROM dm_messages d JOIN users u ON u.id = d.sender_id
+    WHERE d.pinned = 1 AND ((d.sender_id = @me AND d.recipient_id = @other) OR (d.sender_id = @other AND d.recipient_id = @me))
+    ORDER BY d.id DESC
+  `).all({ me: req.userId, other: otherId });
+  res.json({ messages: rows });
+});
+
 export default router;

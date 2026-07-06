@@ -337,6 +337,14 @@ export function setupSocket(io) {
       emitDm(m, 'dm:updated', { message: fullDm(messageId) });
     });
 
+    socket.on('dm:pin', ({ messageId, pinned }) => {
+      const m = myDm(messageId);
+      if (!m || m.deleted) return;
+      db.prepare('UPDATE dm_messages SET pinned = ? WHERE id = ?').run(pinned ? 1 : 0, messageId);
+      emitDm(m, 'dm:updated', { message: fullDm(messageId) });
+      emitDm(m, 'dm:pins-changed', {});
+    });
+
     socket.on('dm:react', ({ messageId, emoji }) => {
       if (!emoji || String(emoji).length > 12) return;
       const m = myDm(messageId);

@@ -44,27 +44,23 @@ export default function DmSidebar({ conversations, activeUserId, onlineIds, onSe
         {error && <div style={{ color: '#ff9a9c', fontSize: 12, marginTop: 6 }}>{error}</div>}
       </form>
 
-      <div className="channel-list">
+      <div className="dm-conv-label">Conversations</div>
+      <div className="dm-conv-list">
         {conversations.length === 0 && (
-          <p style={{ color: 'var(--text-faint)', fontSize: 13, padding: '8px' }}>
-            Aucune conversation. Saisissez un nom d’utilisateur ci-dessus pour commencer.
-          </p>
+          <p className="dm-conv-empty">Aucune conversation. Saisissez un nom d’utilisateur ci-dessus pour commencer.</p>
         )}
         {conversations.map((c) => (
-          <div
+          <button
             key={c.id}
-            className={`member-row ${c.id === activeUserId ? 'active-dm' : ''}`}
-            style={c.id === activeUserId ? { background: 'var(--bg-active)' } : undefined}
+            className={`dm-conv ${c.id === activeUserId ? 'active' : ''}`}
             onClick={() => onSelect(c)}
           >
-            <Avatar user={c} size={32} status={online.has(c.id) ? c.status : 'offline'} />
-            <div style={{ overflow: 'hidden' }}>
-              <div className="m-name">{c.display_name}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {c.last_content || '@' + c.username}
-              </div>
+            <Avatar user={c} size={38} status={online.has(c.id) ? c.status : 'offline'} />
+            <div className="dm-conv-info">
+              <div className="dm-conv-name">{c.display_name}</div>
+              <div className="dm-conv-last">{c.last_content || '@' + c.username}</div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

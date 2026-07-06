@@ -615,6 +615,12 @@ textarea { resize: none; }
 .msg-tombstone { font-size: 13px; font-style: italic; color: var(--text-faint); display: flex; align-items: center; gap: 7px; padding: 2px 0; }
 .message.is-deleted:hover { background: none; }
 .message.is-reply { background: rgba(59, 130, 246, 0.06); border-left: 2px solid rgba(59, 130, 246, 0.4); }
+/* Surlignage personnel (visible de moi seul) : message que j'ai mis en tâche / en rappel */
+.message.is-reminder { background: rgba(240, 178, 50, 0.07); border-left: 2px solid rgba(240, 178, 50, 0.5); }
+.message.is-task { background: rgba(34, 197, 94, 0.07); border-left: 2px solid rgba(34, 197, 94, 0.5); }
+.msg-mark { position: absolute; top: 6px; right: 14px; font-size: 12px; opacity: 0.85; pointer-events: none; }
+.msg-mark.task { color: #4ade80; }
+.msg-mark.reminder { color: #f0b232; }
 .msg-image {
   display: block;
   margin-top: 4px;
@@ -1011,6 +1017,9 @@ textarea { resize: none; }
 }
 .save-pop button { background: none; text-align: left; padding: 8px 10px; border-radius: 6px; font-size: 13px; white-space: nowrap; }
 .save-pop button:hover { background: var(--bg-hover); }
+
+/* Menus qui s'ouvrent vers le haut (près du bas de la conversation) */
+.save-pop.up, .emoji-picker.up, .emoji-pop.up { top: auto; bottom: calc(100% + 4px); }
 .save-done { padding: 8px 10px; font-size: 13px; color: var(--accent); }
 
 /* Panneau Sauvegardés et rappels */
@@ -1512,6 +1521,17 @@ textarea { resize: none; }
 .notif-text { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .notif-time { font-size: 11px; color: var(--text-faint); margin-top: 1px; }
 .notif-dot { position: absolute; top: 14px; right: 12px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+/* Espace Messages : liste de conversations */
+.dm-conv-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint); padding: 10px 14px 6px; }
+.dm-conv-list { flex: 1; overflow-y: auto; padding: 0 8px 8px; }
+.dm-conv-empty { color: var(--text-faint); font-size: 13px; padding: 8px 10px; line-height: 1.5; }
+.dm-conv { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: none; padding: 8px 10px; border-radius: 12px; margin-bottom: 2px; }
+.dm-conv:hover { background: var(--bg-hover); }
+.dm-conv.active { background: var(--bg-active); }
+.dm-conv-info { min-width: 0; flex: 1; }
+.dm-conv-name { font-weight: 600; font-size: 14px; }
+.dm-conv-last { font-size: 12px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Scrollbars discrètes */
 ::-webkit-scrollbar { width: 8px; height: 8px; }

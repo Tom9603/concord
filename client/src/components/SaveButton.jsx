@@ -17,7 +17,7 @@ const OPTIONS = [
 ];
 
 /** Bouton « enregistrer / me rappeler ce message » (rappel relatif ou date précise). */
-export default function SaveButton({ content, attachmentUrl, authorName, source, sourceMessageId }) {
+export default function SaveButton({ content, attachmentUrl, authorName, source, sourceMessageId, dropUp }) {
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState('');
   const [custom, setCustom] = useState('');
@@ -28,6 +28,7 @@ export default function SaveButton({ content, attachmentUrl, authorName, source,
     else body.remindInSeconds = secs === null ? untilTomorrow9() : secs;
     try {
       await api('/saved', { method: 'POST', body });
+      window.dispatchEvent(new Event('pulsar:saved-changed'));
       setDone(remindAt || body.remindInSeconds > 0 ? 'Rappel programmé !' : 'Enregistré !');
       setTimeout(() => { setOpen(false); setDone(''); setCustom(''); }, 1200);
     } catch {
@@ -40,7 +41,7 @@ export default function SaveButton({ content, attachmentUrl, authorName, source,
     <span className="save-wrap">
       <button title="Enregistrer / Me le rappeler" onClick={() => setOpen((v) => !v)}><Icon name="bookmark" /></button>
       {open && (
-        <div className="save-pop">
+        <div className={`save-pop ${dropUp ? 'up' : ''}`}>
           {done ? (
             <div className="save-done">{done}</div>
           ) : (

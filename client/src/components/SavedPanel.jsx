@@ -36,7 +36,7 @@ export default function SavedPanel({ currentUser, embedded }) {
     return () => socket.off('reminder:due', load);
   }, [load]);
 
-  const remove = async (id) => { await api(`/saved/${id}`, { method: 'DELETE' }); load(); };
+  const remove = async (id) => { await api(`/saved/${id}`, { method: 'DELETE' }); window.dispatchEvent(new Event('pulsar:saved-changed')); load(); };
   const setSecs = async (id, secs) => { await api(`/saved/${id}`, { method: 'PATCH', body: { remindInSeconds: secs } }); setMenuFor(null); load(); };
   const setAt = async (id, str) => {
     const epoch = Math.floor(new Date(str).getTime() / 1000);
