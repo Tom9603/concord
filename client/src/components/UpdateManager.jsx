@@ -1,22 +1,36 @@
 import { useUpdate, beginUpdate, dismissUpdate } from '../update.js';
 import Icon from './Icon.jsx';
 
-// Petit logo « signal qui pulse » réutilisé dans la fenêtre de téléchargement.
+// Logo Pulsar (P qui pulse) réutilisé dans la fenêtre de téléchargement.
 function PulseMark({ size = 66 }) {
   return (
-    <svg width={size} height={(size * 110) / 120} viewBox="0 0 120 110" aria-hidden="true" className="ut-mark">
+    <svg width={size} height={size} viewBox="0 0 120 120" aria-hidden="true" className="ut-mark">
       <defs>
-        <linearGradient id="ut-grad" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" stopColor="#8B5CF6" />
-          <stop offset="100%" stopColor="#3B82F6" />
+        <linearGradient id="ut-bowl" x1="0.2" y1="0" x2="0.85" y2="1">
+          <stop offset="0%" stopColor="#b478ef" />
+          <stop offset="50%" stopColor="#7d5cec" />
+          <stop offset="100%" stopColor="#4f83f5" />
+        </linearGradient>
+        <linearGradient id="ut-stem" x1="0.2" y1="0" x2="0.7" y2="1">
+          <stop offset="0%" stopColor="#cda6f6" />
+          <stop offset="55%" stopColor="#9a8bf3" />
+          <stop offset="100%" stopColor="#6f92f7" />
+        </linearGradient>
+        <linearGradient id="ut-wave" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#caa8f7" />
+          <stop offset="100%" stopColor="#9db4f7" />
         </linearGradient>
       </defs>
-      <g fill="none" stroke="url(#ut-grad)" strokeWidth="9" strokeLinecap="round">
-        <path d="M25.3 56.9 A44 44 0 0 1 94.7 56.9" />
-        <path d="M36.4 65.5 A30 30 0 0 1 83.6 65.5" />
-        <path d="M47.4 74.1 A16 16 0 0 1 72.6 74.1" />
+      <g fill="none" stroke="url(#ut-wave)" strokeLinecap="round">
+        <path strokeWidth="2.4" opacity="0.85" d="M 80.01 26.81 A 34 34 0 0 1 79.02 83.83" />
+        <path strokeWidth="2.2" opacity="0.5" d="M 86.24 22.69 A 41 41 0 0 1 85.10 88.17" />
+        <path strokeWidth="2" opacity="0.28" d="M 94.34 20.47 A 48 48 0 0 1 94.34 89.53" />
+        <path strokeWidth="2.4" opacity="0.8" d="M 45.50 81.85 A 31 31 0 0 1 34.15 39.50" />
+        <path strokeWidth="2.2" opacity="0.46" d="M 39.75 86.50 A 38 38 0 0 1 28.77 34.86" />
+        <path strokeWidth="2" opacity="0.26" d="M 32.07 89.47 A 45 45 0 0 1 20.55 35.27" />
       </g>
-      <circle cx="60" cy="86" r="6.5" fill="url(#ut-grad)" />
+      <path d="M 50 31 L 71 31 A 18.5 18.5 0 0 1 71 68 L 50 68 Z" fill="url(#ut-bowl)" />
+      <rect x="44" y="31" width="15" height="58" rx="7.5" fill="url(#ut-stem)" />
     </svg>
   );
 }
