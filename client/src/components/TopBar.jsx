@@ -17,7 +17,7 @@ export default function TopBar({
     <header className="topbar">
       <div className="topbar-left">
         <button className="topbar-brand" onClick={onHome} title="Accueil">
-          <Logo size={30} row />
+          <Logo size={44} wordmark={false} row />
         </button>
         <div className="topbar-nav">
           {canGoBack && <button className="topbar-arrow" title="Retour" onClick={onBack}><Icon name="arrow-left" /></button>}

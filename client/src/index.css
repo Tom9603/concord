@@ -1161,13 +1161,14 @@ textarea { resize: none; }
 
 /* Logo Pulsar */
 .brand-logo { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 26px; }
+.brand-mark { display: block; object-fit: contain; }
 .brand-word { font-family: var(--font-display); font-size: 26px; font-weight: 500; letter-spacing: 9px; color: var(--text); padding-left: 9px; }
 
 /* ===================== NOUVELLE OSSATURE PULSAR ===================== */
 
 /* Barre du haut */
 .topbar {
-  height: 72px;
+  height: 84px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
