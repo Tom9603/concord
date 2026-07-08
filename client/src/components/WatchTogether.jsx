@@ -19,11 +19,10 @@ function loadYT() {
 const isAudioUrl = (u) => /\.(mp3|m4a|wav|ogg)(\?|#|$)/i.test(u || '');
 
 /** Lecture synchronisée (« watch party ») en salon (channelId) ou en message privé (dmUserId). */
-export default function WatchTogether({ channelId, dmUserId }) {
+export default function WatchTogether({ channelId, dmUserId, open = false, onClose }) {
   const isDm = dmUserId != null;
   const [session, setSession] = useState(null);
   const [url, setUrl] = useState('');
-  const [open, setOpen] = useState(false);
   const socket = getSocket();
   const suppress = useRef(false);
   const ytPlayer = useRef(null);
@@ -38,12 +37,11 @@ export default function WatchTogether({ channelId, dmUserId }) {
 
   useEffect(() => {
     setSession(null);
-    setOpen(false);
     emitGet();
     const stateEvent = isDm ? 'watch:dm:state' : 'watch:state';
     const syncEvent = isDm ? 'watch:dm:sync' : 'watch:sync';
     const match = (e) => (isDm ? e.peerId === dmUserId : e.channelId === channelId);
-    const onState = (e) => { if (match(e)) { setSession(e.session); if (e.session) setOpen(true); } };
+    const onState = (e) => { if (match(e)) setSession(e.session); };
     const onSync = (e) => { if (match(e)) applySync(e.playing, e.time); };
     const onErr = ({ message }) => alert(message);
     socket.on(stateEvent, onState);
@@ -94,17 +92,16 @@ export default function WatchTogether({ channelId, dmUserId }) {
   const start = () => { if (url.trim()) { emitStart(url.trim()); setUrl(''); } };
   const stop = () => emitStop();
 
-  if (!session && !open) {
-    return <div className="watch-bar"><button className="watch-open-btn" onClick={() => setOpen(true)}><Icon name="tv" /> Regarder / écouter ensemble</button></div>;
-  }
+  if (!open && !session) return null;
 
   return (
     <div className="watch-panel">
       <div className="watch-head">
-        <span><Icon name="tv" /> Regarder ensemble</span>
+        <span><Icon name="tv" /> Regarder / écouter ensemble</span>
         <div className="watch-head-actions">
-          {session && <button className="watch-stop" onClick={stop}>Arrêter</button>}
-          <button onClick={() => setOpen(false)} title="Réduire"><Icon name="xmark" /></button>
+          {session
+            ? <button className="watch-stop" onClick={stop}>Arrêter</button>
+            : <button onClick={() => onClose?.()} title="Fermer"><Icon name="xmark" /></button>}
         </div>
       </div>
 

@@ -28,6 +28,8 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
   const [confirmDel, setConfirmDel] = useState(null);
   const [showPins, setShowPins] = useState(false);
   const [pins, setPins] = useState([]);
+  const [watchOpen, setWatchOpen] = useState(false);
+  useEffect(() => { setWatchOpen(false); }, [peer.id]);
   const scrollRef = useRef(null);
   const typingTimer = useRef(null);
   const lastTypingSent = useRef(0);
@@ -102,7 +104,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
 
       <div className="content-body">
         <div className="chat-area">
-          <WatchTogether dmUserId={peer.id} />
+          <WatchTogether dmUserId={peer.id} open={watchOpen} onClose={() => setWatchOpen(false)} />
           <button className="chat-pins-btn" title="Messages épinglés" onClick={togglePins}><Icon name="thumbtack" /></button>
           {showPins && (
             <div className="pins-panel">
@@ -216,6 +218,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
             onSendText={(t) => send({ content: t })}
             onSendAttachment={(url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name })}
             onTyping={onTypingSignal}
+            onWatch={() => setWatchOpen((v) => !v)}
           />
 
           {confirmDel && (

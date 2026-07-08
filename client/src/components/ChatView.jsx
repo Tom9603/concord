@@ -33,6 +33,8 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
   const [showPins, setShowPins] = useState(false);
   const [pins, setPins] = useState([]);
   const [confirmDel, setConfirmDel] = useState(null);
+  const [watchOpen, setWatchOpen] = useState(false);
+  useEffect(() => { setWatchOpen(false); }, [channel.id]);
   const scrollRef = useRef(null);
   const typingTimers = useRef({});
   const lastTypingSent = useRef(0);
@@ -138,7 +140,7 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
 
   return (
     <div className="chat-area">
-      <WatchTogether channelId={channel.id} />
+      <WatchTogether channelId={channel.id} open={watchOpen} onClose={() => setWatchOpen(false)} />
       <button className="chat-pins-btn" title="Messages épinglés" onClick={togglePins}><Icon name="thumbtack" /></button>
 
       {showPins && (
@@ -290,6 +292,7 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
         onSendText={(t) => send({ content: t })}
         onSendAttachment={(url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name })}
         onTyping={onTyping}
+        onWatch={() => setWatchOpen((v) => !v)}
       />
 
       {confirmDel && (
