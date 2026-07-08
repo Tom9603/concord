@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Modal from './Modal.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
@@ -21,7 +22,7 @@ function memberSince(created) {
 }
 
 /** Fiche de profil en modale (soi ou un tiers) : bannière, statut, mutuels, actions. */
-export default function ProfileModal({ userId, servers = [], onClose, onMessage, onEditProfile, onLogout, onOpenProfile }) {
+export default function ProfileModal({ userId, servers = [], onClose, onMessage, onEditProfile, onLogout, onOpenProfile, onOpenServer }) {
   const { user: me, updateUser } = useAuth();
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
@@ -32,6 +33,7 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
   const [full, setFull] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [flash, setFlash] = useState('');
+  const [serverTip, setServerTip] = useState(null); // { server, x, y } — mini-aperçu au survol
 
   const load = useCallback(() => {
     api(`/users/${userId}`).then(setData).catch((e) => setErr(e.message));
@@ -46,6 +48,8 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
   const rel = data.relationship;
   const banner = u.banner_url ? { background: `center/cover url(${mediaUrl(u.banner_url)})` } : { background: u.banner_color || 'linear-gradient(135deg, #241f3d, #10243a)' };
   const since = memberSince(u.created_at);
+  const hasExtra = !!(u.company || u.location || u.website || u.email_pro || u.phone || (u.skills || '').trim() || u.cv_summary || u.cv_url || u.about);
+  const openMutualServer = (s) => { setServerTip(null); onClose(); onOpenServer?.(s.id); };
 
   const act = async (fn) => { try { await fn(); load(); } catch (e) { setFlash(e.message); setTimeout(() => setFlash(''), 2500); } };
   const changeStatus = async (status) => { const { user } = await api('/users/me', { method: 'PATCH', body: { status } }); updateUser(user); load(); };
@@ -66,7 +70,6 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
               <button className="profile-dots" title="Plus d’options" onClick={() => setMenuOpen((v) => !v)}><Icon name="ellipsis" /></button>
               {menuOpen && (
                 <div className="profile-menu" onMouseLeave={() => setMenuOpen(false)}>
-                  <button onClick={() => { setFull(true); setMenuOpen(false); }}>Voir le profil complet</button>
                   {rel === 'friends' && <button onClick={() => { removeContact(); setMenuOpen(false); }}>Retirer de vos contacts</button>}
                   {rel === 'blocked'
                     ? <button onClick={() => { unblock(); setMenuOpen(false); }}>Débloquer</button>
@@ -80,12 +83,21 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
         </div>
 
         <div className="profile-body">
-          <div className="profile-idline">
-            <h2>{u.display_name}</h2>
-            {u.pronouns && <span className="profile-pronouns">{u.pronouns}</span>}
+          <div className="profile-toprow">
+            <div className="profile-id">
+              <div className="profile-idline">
+                <h2>{u.display_name}</h2>
+                {u.pronouns && <span className="profile-pronouns">{u.pronouns}</span>}
+              </div>
+              <div className="profile-sub">@{u.username}</div>
+              {u.headline && <div className="profile-headline">{u.headline}</div>}
+            </div>
+            <div className="profile-primary">
+              {self
+                ? <button className="btn" onClick={() => { onEditProfile(); onClose(); }}><Icon name="pen" /> Modifier le profil</button>
+                : <button className="btn" onClick={() => { onMessage(u); onClose(); }}><Icon name="message" /> Message privé</button>}
+            </div>
           </div>
-          <div className="profile-sub">@{u.username}</div>
-          {u.headline && <div className="profile-headline">{u.headline}</div>}
 
           <div className="profile-status">
             <span className={`status-dot ${u.status || 'offline'}`} />
@@ -100,20 +112,30 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
           {data.friends_count > 0 && (
             <button className="profile-link-btn" onClick={() => setShowContacts(true)}><Icon name="user-group" /> {data.friends_count} contact{data.friends_count > 1 ? 's' : ''}</button>
           )}
+          {!self && (
+            <button className="profile-link-btn" onClick={() => setFull((v) => !v)}>
+              <Icon name={full ? 'chevron-up' : 'id-card'} /> {full ? 'Réduire le profil' : 'Voir le profil complet'}
+            </button>
+          )}
 
           {(rel === 'pending_in') && <div className="profile-pending">Cette personne souhaite vous ajouter.</div>}
 
           {(full || self) && <ProCard u={u} />}
           {(full || self) && u.about && <div className="field"><label>À propos</label><p style={{ fontSize: 14 }}>{u.about}</p></div>}
+          {full && !self && !hasExtra && <p className="profile-empty-extra">Ce membre n'a pas encore renseigné d'informations supplémentaires.</p>}
 
           {!self && data.mutual_servers.length > 0 && (
             <div className="profile-mutual">
               <label>Serveurs en commun · {data.mutual_servers.length}</label>
               <div className="mutual-servers">
                 {data.mutual_servers.map((s) => (
-                  <span key={s.id} className="mutual-server" title={s.name} style={{ background: s.icon_url ? undefined : s.icon_color }}>
+                  <button key={s.id} className="mutual-server clickable" style={{ background: s.icon_url ? undefined : s.icon_color }}
+                    onClick={() => openMutualServer(s)}
+                    onMouseEnter={(e) => setServerTip({ server: s, x: e.clientX, y: e.clientY })}
+                    onMouseMove={(e) => setServerTip((t) => (t && t.server.id === s.id ? { ...t, x: e.clientX, y: e.clientY } : t))}
+                    onMouseLeave={() => setServerTip(null)}>
                     {s.icon_url ? <img src={mediaUrl(s.icon_url)} alt="" /> : s.name.charAt(0).toUpperCase()}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
@@ -157,15 +179,11 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
         </div>
 
         <div className="modal-actions profile-actions">
-          <div className="pm-action-group">
+          <div className="pm-left">
             {self ? (
-              <>
-                <button className="btn" onClick={() => { onEditProfile(); onClose(); }}><Icon name="pen" /> Modifier le profil</button>
-                <button className="btn btn-ghost" onClick={onLogout}><Icon name="right-from-bracket" /> Se déconnecter</button>
-              </>
+              <button className="btn btn-ghost" onClick={onLogout}><Icon name="right-from-bracket" /> Se déconnecter</button>
             ) : (
               <>
-                <button className="btn" onClick={() => { onMessage(u); onClose(); }}><Icon name="message" /> Message privé</button>
                 {rel === 'none' && <button className="btn btn-ghost" onClick={addContact}><Icon name="user-plus" /> Ajouter en contact</button>}
                 {rel === 'pending_in' && <button className="btn btn-ghost" onClick={acceptContact}><Icon name="check" /> Accepter la demande</button>}
                 <button className="btn btn-ghost" onClick={() => setInvite((v) => !v)}><Icon name="paper-plane" /> Inviter à ›</button>
@@ -175,6 +193,21 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
           <button className="btn btn-ghost" onClick={onClose}>Fermer</button>
         </div>
       </Modal>
+
+      {serverTip && createPortal(
+        <div className="server-tip" style={serverTip.x > window.innerWidth - 250
+          ? { right: window.innerWidth - serverTip.x + 16, top: serverTip.y + 14 }
+          : { left: serverTip.x + 16, top: serverTip.y + 14 }}>
+          <span className="server-tip-icon" style={{ background: serverTip.server.icon_url ? undefined : serverTip.server.icon_color }}>
+            {serverTip.server.icon_url ? <img src={mediaUrl(serverTip.server.icon_url)} alt="" /> : serverTip.server.name.charAt(0).toUpperCase()}
+          </span>
+          <div className="server-tip-info">
+            <div className="server-tip-name">{serverTip.server.name}</div>
+            <div className="server-tip-sub">{serverTip.server.member_count ? `${serverTip.server.member_count} membre${serverTip.server.member_count > 1 ? 's' : ''}` : 'Serveur en commun'} · cliquez pour ouvrir</div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {showContacts && (
         <FriendsListModal userId={u.id} title={self ? 'Vos contacts' : `Contacts de ${u.display_name}`}

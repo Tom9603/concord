@@ -1539,8 +1539,8 @@ input[type="file"]::file-selector-button:hover {
 .profile-status .status-dot { position: static; width: 10px; height: 10px; }
 .profile-status select { background: var(--bg-input); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 5px 8px; font-size: 13px; }
 .profile-meta { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
-.profile-link-btn { background: var(--bg-content-alt); border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; padding: 6px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 7px; }
-.profile-link-btn:hover { color: var(--text); }
+.profile-link-btn { background: var(--bg-content-alt); border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; padding: 6px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 7px; margin: 0 6px 8px 0; cursor: pointer; }
+.profile-link-btn:hover { color: var(--text); border-color: rgba(139, 92, 246, 0.45); }
 .profile-pending { font-size: 13px; color: var(--accent); margin: 8px 0; }
 .profile-mutual { margin-top: 14px; }
 .profile-mutual label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint); margin-bottom: 8px; }
@@ -1555,9 +1555,32 @@ input[type="file"]::file-selector-button:hover {
 .profile-report-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .invite-server-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; color: var(--text); font-size: 14px; padding: 7px 8px; border-radius: 9px; }
 .invite-server-row:hover { background: var(--bg-hover); }
-.profile-actions { flex-direction: column; align-items: stretch; gap: 8px; padding: 16px 20px; border-top: 1px solid var(--border); margin-top: 8px; }
-.pm-action-group { display: flex; flex-direction: column; gap: 8px; }
-.profile-actions .btn { width: 100%; justify-content: center; }
+/* Bas de carte : actions secondaires à gauche, « Fermer » toujours à droite */
+.profile-actions { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--border); margin-top: 8px; }
+.pm-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.profile-actions .btn { width: auto; justify-content: center; }
+
+/* Ligne du haut : identité à gauche, action principale (Message privé / Modifier) à droite */
+.profile-toprow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.profile-id { min-width: 0; }
+.profile-primary { flex-shrink: 0; }
+.profile-primary .btn { width: auto; padding: 8px 14px; font-size: 13px; white-space: nowrap; }
+.profile-empty-extra { color: var(--text-muted); font-size: 13px; margin-top: 8px; font-style: italic; }
+
+/* Serveurs en commun : cliquables + mini-aperçu au survol */
+.mutual-server.clickable { cursor: pointer; border: none; transition: transform 0.12s, box-shadow 0.12s; }
+.mutual-server.clickable:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45); }
+.server-tip {
+  position: fixed; z-index: 4000; pointer-events: none;
+  display: flex; align-items: center; gap: 10px;
+  max-width: 240px; padding: 9px 12px;
+  background: rgba(16, 16, 26, 0.96); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55); backdrop-filter: blur(12px);
+}
+.server-tip-icon { width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; overflow: hidden; }
+.server-tip-icon img { width: 100%; height: 100%; object-fit: cover; }
+.server-tip-name { font-weight: 600; font-size: 14px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.server-tip-sub { font-size: 11.5px; color: var(--text-muted); }
 .edit-banner-preview { height: 92px; border-radius: 12px; display: flex; align-items: flex-end; padding: 12px; margin-bottom: 16px; }
 
 /* Cloche de notifications */

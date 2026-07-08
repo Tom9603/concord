@@ -104,7 +104,9 @@ router.get('/:id', (req, res) => {
   const relationship = relationshipWith(me, targetId);
 
   const mutualServers = me === targetId ? [] : db.prepare(`
-    SELECT s.id, s.name, s.icon_color, s.icon_url FROM servers s
+    SELECT s.id, s.name, s.icon_color, s.icon_url,
+      (SELECT COUNT(*) FROM server_members m WHERE m.server_id = s.id) AS member_count
+    FROM servers s
     JOIN server_members a ON a.server_id = s.id AND a.user_id = ?
     JOIN server_members b ON b.server_id = s.id AND b.user_id = ?
   `).all(me, targetId);

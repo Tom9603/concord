@@ -542,7 +542,7 @@ export default function AppLayout() {
         <ProfileModal userId={profileTarget} servers={servers}
           onClose={() => setProfileTarget(null)} onMessage={openDm}
           onEditProfile={() => setModal('editProfile')} onLogout={logout}
-          onOpenProfile={(id) => setProfileTarget(id)} />
+          onOpenProfile={(id) => setProfileTarget(id)} onOpenServer={openServer} />
       )}
       {modal === 'editProfile' && <EditProfileModal onClose={() => setModal(null)} />}
       {modal === 'feedback' && <FeedbackModal onClose={() => setModal(null)} />}
