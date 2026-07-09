@@ -18,8 +18,14 @@ const TOOLS = [
 ];
 const SHAPES = new Set(['line', 'arrow', 'rect', 'square', 'ellipse']);
 
-/** Tableau blanc partagé (temps réel par salon) : outils riches à gauche + publication dans le salon. */
-export default function Whiteboard({ channelId, onClose, onPublish }) {
+/** Tableau blanc partagé (temps réel, salon OU message privé) : outils riches à gauche + publication. */
+export default function Whiteboard({ channelId, dmUserId, onClose, onPublish }) {
+  const isDm = dmUserId != null;
+  const EV = isDm
+    ? { get: 'dmboard:get', init: 'dmboard:init', draw: 'dmboard:draw', clear: 'dmboard:clear' }
+    : { get: 'board:get', init: 'board:init', draw: 'board:draw', clear: 'board:clear' };
+  const key = isDm ? { dmUserId } : { channelId };
+  const matches = (p) => (isDm ? p.dmUserId === dmUserId : p.channelId === channelId);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
   const drawing = useRef(false);
@@ -67,21 +73,22 @@ export default function Whiteboard({ channelId, onClose, onPublish }) {
     }
   }
   function fill() { const ctx = ctxRef.current; ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H); }
-  const emit = (stroke) => { drawSeg(stroke); getSocket().emit('board:draw', { channelId, stroke }); };
+  const emit = (stroke) => { drawSeg(stroke); getSocket().emit(EV.draw, { ...key, stroke }); };
 
   useEffect(() => {
     ctxRef.current = canvasRef.current.getContext('2d');
     fill();
     const socket = getSocket();
-    socket.emit('board:get', { channelId });
-    const onInit = ({ channelId: cid, strokes }) => { if (cid === channelId) { fill(); strokes.forEach(drawSeg); } };
-    const onDraw = ({ channelId: cid, stroke }) => { if (cid === channelId) drawSeg(stroke); };
-    const onClear = ({ channelId: cid }) => { if (cid === channelId) fill(); };
-    socket.on('board:init', onInit);
-    socket.on('board:draw', onDraw);
-    socket.on('board:clear', onClear);
-    return () => { socket.off('board:init', onInit); socket.off('board:draw', onDraw); socket.off('board:clear', onClear); };
-  }, [channelId]);
+    socket.emit(EV.get, key);
+    const onInit = (p) => { if (matches(p)) { fill(); p.strokes.forEach(drawSeg); } };
+    const onDraw = (p) => { if (matches(p)) drawSeg(p.stroke); };
+    const onClear = (p) => { if (matches(p)) fill(); };
+    socket.on(EV.init, onInit);
+    socket.on(EV.draw, onDraw);
+    socket.on(EV.clear, onClear);
+    return () => { socket.off(EV.init, onInit); socket.off(EV.draw, onDraw); socket.off(EV.clear, onClear); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channelId, dmUserId]);
 
   function pos(e) {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -146,7 +153,7 @@ export default function Whiteboard({ channelId, onClose, onPublish }) {
     setTextBox(null); setTextVal('');
   }
 
-  const clear = () => getSocket().emit('board:clear', { channelId });
+  const clear = () => getSocket().emit(EV.clear, key);
 
   async function publish() {
     setBusy(true);

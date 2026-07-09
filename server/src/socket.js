@@ -12,6 +12,7 @@ const activeCalls = new Map();
 const watchSessions = new Map();
 // Tableau blanc : channelId -> [ strokes ] (historique en mémoire, plafonné)
 const boards = new Map();
+const dmBoards = new Map(); // dmKey -> strokes[] (tableau blanc en message privé)
 // « Regarder ensemble » en message privé : clé paire triée -> session
 const dmWatchSessions = new Map();
 const dmKey = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`);
@@ -620,6 +621,30 @@ export function setupSocket(io) {
       if (!channel) return;
       boards.set(channelId, []);
       io.to('server:' + channel.server_id).emit('board:clear', { channelId: Number(channelId) });
+    });
+
+    // Tableau blanc partagé en message privé (routé entre les 2 correspondants).
+    socket.on('dmboard:get', ({ dmUserId }) => {
+      const other = Number(dmUserId);
+      if (!other) return;
+      socket.emit('dmboard:init', { dmUserId: other, strokes: dmBoards.get(dmKey(userId, other)) || [] });
+    });
+    socket.on('dmboard:draw', ({ dmUserId, stroke }) => {
+      const other = Number(dmUserId);
+      if (!other || !stroke) return;
+      const key = dmKey(userId, other);
+      let hist = dmBoards.get(key);
+      if (!hist) { hist = []; dmBoards.set(key, hist); }
+      hist.push(stroke);
+      if (hist.length > 8000) hist.splice(0, hist.length - 8000);
+      io.to('user:' + other).emit('dmboard:draw', { dmUserId: userId, stroke });
+    });
+    socket.on('dmboard:clear', ({ dmUserId }) => {
+      const other = Number(dmUserId);
+      if (!other) return;
+      dmBoards.set(dmKey(userId, other), []);
+      io.to('user:' + userId).emit('dmboard:clear', { dmUserId: other });
+      io.to('user:' + other).emit('dmboard:clear', { dmUserId: userId });
     });
 
     socket.on('disconnect', () => {

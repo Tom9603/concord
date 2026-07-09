@@ -514,6 +514,21 @@ input[type="file"]::file-selector-button:hover {
 .dm-search-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
 .dm-search-text { font-size: 14px; color: var(--text); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
+/* Tâches partagées en message privé */
+.dmt-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.dmt-head h2 { margin: 0; }
+.dmt-list { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
+.dmt-item { display: flex; align-items: center; gap: 11px; padding: 10px 12px; background: var(--bg-content-alt); border: 1px solid var(--border); border-radius: 10px; }
+.dmt-item.is-done .dmt-title { color: var(--text-muted); }
+.dmt-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--text-faint); }
+.dmt-dot.todo { background: var(--text-muted); }
+.dmt-dot.doing { background: var(--accent-2); }
+.dmt-dot.done { background: var(--online); }
+.dmt-main { flex: 1; min-width: 0; }
+.dmt-title { font-size: 14px; font-weight: 500; color: var(--text); }
+.dmt-meta { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.dmt-sep { opacity: 0.5; }
+
 /* Sondages */
 .poll-card { margin-top: 6px; max-width: 460px; background: var(--bg-content-alt); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
 .poll-q { font-weight: 600; font-size: 15px; color: #fff; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }

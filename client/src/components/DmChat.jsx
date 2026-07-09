@@ -11,6 +11,8 @@ import BookmarkButton from './BookmarkButton.jsx';
 import ReminderButton from './ReminderButton.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import WatchTogether from './WatchTogether.jsx';
+import Whiteboard from './Whiteboard.jsx';
+import DmTasksModal from './DmTasksModal.jsx';
 import { ctx } from '../contextmenu.js';
 import { userColor } from '../usercolor.js';
 import { formatTime, formatTimeDate } from '../datetime.js';
@@ -32,7 +34,9 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
   const [watchOpen, setWatchOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQ, setSearchQ] = useState('');
-  useEffect(() => { setWatchOpen(false); setShowSearch(false); setSearchQ(''); }, [peer.id]);
+  const [boardOpen, setBoardOpen] = useState(false);
+  const [tasksOpen, setTasksOpen] = useState(false);
+  useEffect(() => { setWatchOpen(false); setShowSearch(false); setSearchQ(''); setBoardOpen(false); setTasksOpen(false); }, [peer.id]);
   const searchHits = searchQ.trim().length < 2 ? [] : messages.filter((m) => !m.deleted && (m.content || '').toLowerCase().includes(searchQ.trim().toLowerCase()));
   function jumpToMessage(id) {
     const el = scrollRef.current?.querySelector(`[data-mid="${id}"]`);
@@ -113,9 +117,20 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
         <span className="clickable" onClick={() => onOpenProfile?.(peer.id)}>{peer.display_name}</span>
         <span className="topic">@{peer.username}</span>
         <span className="spacer" />
+        <button className="header-btn" title="Tâches partagées" onClick={() => setTasksOpen(true)}><Icon name="list-check" /></button>
+        <button className="header-btn" title="Tableau blanc partagé" onClick={() => setBoardOpen(true)}><Icon name="palette" /></button>
         <button className={`header-btn ${showSearch ? 'active' : ''}`} title="Rechercher dans la conversation" onClick={() => setShowSearch((v) => !v)}><Icon name="magnifying-glass" /></button>
         <button className="header-btn" title="Appel vocal" onClick={() => onCall(peer)}><Icon name="phone" /></button>
       </div>
+
+      {boardOpen && (
+        <Whiteboard dmUserId={peer.id} onClose={() => setBoardOpen(false)}
+          onPublish={(url) => send({ content: '', attachmentUrl: url, attachmentName: 'tableau-blanc.png' })} />
+      )}
+      {tasksOpen && (
+        <DmTasksModal peer={peer} currentUser={currentUser} onClose={() => setTasksOpen(false)}
+          onNewTask={() => onCreateTask?.({ peer: { id: peer.id, display_name: peer.display_name } })} />
+      )}
 
       {showSearch && (
         <div className="dm-search">
