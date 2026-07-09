@@ -22,7 +22,7 @@ const readAsDataURL = (file) =>
  * - onTyping()                          : signale la frappe
  * - replyingTo / onClearReply           : réponse à un message
  */
-export default function Composer({ placeholder, onSendText, onSendAttachment, onTyping, replyingTo, onClearReply, onWatch, mentionables }) {
+export default function Composer({ placeholder, onSendText, onSendAttachment, onTyping, replyingTo, onClearReply, onWatch, onPoll, mentionables }) {
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [panel, setPanel] = useState(null); // 'gif' | 'emoji' | null
@@ -142,6 +142,9 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
           <button type="button" className={`composer-attach ${panel === 'emoji' ? 'active' : ''}`} title="Emoji" onClick={() => setPanel((p) => (p === 'emoji' ? null : 'emoji'))}><Icon name="face-smile" /></button>
           {onWatch && (
             <button type="button" className="composer-attach" title="Regarder / écouter ensemble" onClick={onWatch}><Icon name="tv" /></button>
+          )}
+          {onPoll && (
+            <button type="button" className="composer-attach" title="Créer un sondage" onClick={onPoll}><Icon name="chart-simple" /></button>
           )}
           <VoiceRecorder onSend={(url) => { onSendAttachment(url, ''); afterSend(); }} disabled={uploading} />
           <input

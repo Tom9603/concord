@@ -6,6 +6,8 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Composer from './Composer.jsx';
 import Attachment from './Attachment.jsx';
+import PollCard from './PollCard.jsx';
+import CreatePollModal from './CreatePollModal.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
 import BookmarkButton from './BookmarkButton.jsx';
 import ReminderButton from './ReminderButton.jsx';
@@ -35,7 +37,8 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
   const [pins, setPins] = useState([]);
   const [confirmDel, setConfirmDel] = useState(null);
   const [watchOpen, setWatchOpen] = useState(false);
-  useEffect(() => { setWatchOpen(false); }, [channel.id]);
+  const [pollOpen, setPollOpen] = useState(false);
+  useEffect(() => { setWatchOpen(false); setPollOpen(false); }, [channel.id]);
   const scrollRef = useRef(null);
   const typingTimers = useRef({});
   const lastTypingSent = useRef(0);
@@ -71,6 +74,10 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
       setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
     };
     const onPins = ({ channelId }) => { if (channelId === channel.id && showPins) loadPins(); };
+    const onPoll = ({ channelId, poll }) => {
+      if (channelId !== channel.id) return;
+      setMessages((prev) => prev.map((m) => (m.poll && m.poll.id === poll.id ? { ...m, poll: { ...poll, my_votes: m.poll.my_votes } } : m)));
+    };
     const onTypingEvt = ({ channelId, user }) => {
       if (channelId !== channel.id || user.id === currentUser.id) return;
       setTyping((prev) => ({ ...prev, [user.id]: user.display_name }));
@@ -85,6 +92,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
     socket.on('message:deleted', onDeleted);
     socket.on('reaction:update', onReaction);
     socket.on('pins:changed', onPins);
+    socket.on('poll:update', onPoll);
     socket.on('typing', onTypingEvt);
     return () => {
       socket.off('message:new', onNew);
@@ -92,6 +100,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
       socket.off('message:deleted', onDeleted);
       socket.off('reaction:update', onReaction);
       socket.off('pins:changed', onPins);
+      socket.off('poll:update', onPoll);
       socket.off('typing', onTypingEvt);
     };
   }, [channel.id, currentUser.id, showPins]);
@@ -230,6 +239,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
                 ) : (
                   <>
                     {m.content && <div className="msg-text">{renderRich(m.content, currentUser)}</div>}
+                    {m.poll && <PollCard poll={m.poll} />}
                     {m.attachment_url && <Attachment url={m.attachment_url} name={m.attachment_name} />}
                     {m.edited ? <div className="msg-edited">modifié</div> : null}
                   </>
@@ -302,8 +312,11 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
         onSendAttachment={(url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name })}
         onTyping={onTyping}
         onWatch={() => setWatchOpen((v) => !v)}
+        onPoll={() => setPollOpen(true)}
         mentionables={members}
       />
+
+      {pollOpen && <CreatePollModal channelId={channel.id} onClose={() => setPollOpen(false)} />}
 
       {confirmDel && (
         <ConfirmModal title="Supprimer ce message ?" message="Le message sera remplacé par « Message supprimé »." confirmLabel="Supprimer" danger

@@ -76,17 +76,40 @@ export function replyPreview(id) {
   return { id: r.id, display_name: r.display_name, content: r.content, attachment_url: r.attachment_url };
 }
 
-/** Message de salon complet (auteur + pièce jointe + réactions + réponse + épinglé). */
-export function fullMessage(id) {
+/** Sondage sérialisé (question, options + comptes, total, mes votes). */
+export function pollObject(pollId, userId = null) {
+  const p = db.prepare('SELECT * FROM polls WHERE id = ?').get(pollId);
+  if (!p) return null;
+  let options = [];
+  try { options = JSON.parse(p.options); } catch { options = []; }
+  const counts = new Array(options.length).fill(0);
+  for (const v of db.prepare('SELECT option_index, COUNT(*) AS n FROM poll_votes WHERE poll_id = ? GROUP BY option_index').all(pollId)) {
+    if (counts[v.option_index] !== undefined) counts[v.option_index] = v.n;
+  }
+  const myVotes = userId
+    ? db.prepare('SELECT option_index FROM poll_votes WHERE poll_id = ? AND user_id = ?').all(pollId, userId).map((r) => r.option_index)
+    : [];
+  return {
+    id: p.id, question: p.question, multi: !!p.multi, closes_at: p.closes_at,
+    closed: p.closes_at ? p.closes_at * 1000 < Date.now() : false,
+    options: options.map((text, i) => ({ text, votes: counts[i] })),
+    total: counts.reduce((a, b) => a + b, 0),
+    my_votes: myVotes,
+  };
+}
+
+/** Message de salon complet (auteur + pièce jointe + réactions + réponse + épinglé + sondage). */
+export function fullMessage(id, userId = null) {
   const m = db.prepare(`
     SELECT m.id, m.content, m.created_at, m.user_id, m.edited, m.deleted, m.attachment_url, m.attachment_name,
-           m.reply_to_id, m.pinned, m.channel_id,
+           m.reply_to_id, m.pinned, m.channel_id, m.poll_id,
            u.username, u.display_name, u.avatar_color, u.avatar_url
     FROM messages m JOIN users u ON u.id = m.user_id WHERE m.id = ?
   `).get(id);
   if (m) {
     m.reactions = reactionsFor(id);
     m.reply_to = replyPreview(m.reply_to_id);
+    if (m.poll_id) m.poll = pollObject(m.poll_id, userId);
   }
   return m;
 }

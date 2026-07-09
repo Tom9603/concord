@@ -3,20 +3,21 @@ import db from '../db.js';
 import { authMiddleware } from '../auth.js';
 import { hasPermission, canAccessChannel } from '../permissions.js';
 import { getIO } from '../realtime.js';
-import { reactionsFor, replyPreview } from '../socket.js';
+import { reactionsFor, replyPreview, pollObject, fullMessage } from '../socket.js';
 
 const router = Router();
 router.use(authMiddleware);
 
 const MESSAGE_COLS = `
   m.id, m.content, m.created_at, m.user_id, m.edited, m.deleted, m.attachment_url, m.attachment_name,
-  m.reply_to_id, m.pinned, u.username, u.display_name, u.avatar_color, u.avatar_url
+  m.reply_to_id, m.pinned, m.poll_id, u.username, u.display_name, u.avatar_color, u.avatar_url
 `;
 
-function decorate(rows) {
+function decorate(rows, userId) {
   for (const m of rows) {
     m.reactions = reactionsFor(m.id);
     m.reply_to = replyPreview(m.reply_to_id);
+    if (m.poll_id) m.poll = pollObject(m.poll_id, userId);
   }
   return rows;
 }
@@ -46,7 +47,7 @@ router.get('/:id/messages', (req, res) => {
     : db.prepare(`SELECT ${MESSAGE_COLS} FROM messages m JOIN users u ON u.id = m.user_id
         WHERE m.channel_id = ? ORDER BY m.id DESC LIMIT ?`).all(channel.id, limit);
 
-  res.json({ messages: decorate(rows).reverse() });
+  res.json({ messages: decorate(rows, req.userId).reverse() });
 });
 
 /** Messages épinglés d'un salon. */
@@ -55,7 +56,31 @@ router.get('/:id/pins', (req, res) => {
   if (!channel) return res.status(403).json({ error: 'Accès refusé à ce salon' });
   const rows = db.prepare(`SELECT ${MESSAGE_COLS} FROM messages m JOIN users u ON u.id = m.user_id
     WHERE m.channel_id = ? AND m.pinned = 1 ORDER BY m.id DESC`).all(channel.id);
-  res.json({ messages: decorate(rows) });
+  res.json({ messages: decorate(rows, req.userId) });
+});
+
+/** Créer un sondage dans un salon (posté comme message). */
+router.post('/:id/polls', (req, res) => {
+  const channel = accessibleChannel(req.params.id, req.userId);
+  if (!channel) return res.status(403).json({ error: 'Accès refusé à ce salon' });
+  const question = (req.body?.question || '').trim();
+  const rawOptions = Array.isArray(req.body?.options) ? req.body.options.map((o) => (o || '').trim()).filter(Boolean) : [];
+  const options = [...new Set(rawOptions)].slice(0, 10);
+  if (!question) return res.status(400).json({ error: 'La question est requise' });
+  if (options.length < 2) return res.status(400).json({ error: 'Au moins deux options sont requises' });
+  const multi = req.body?.multi ? 1 : 0;
+  const hours = Number(req.body?.durationHours) || 0;
+  const closesAt = hours > 0 ? Math.floor(Date.now() / 1000) + Math.round(hours * 3600) : null;
+
+  const info = db.prepare('INSERT INTO polls (channel_id, creator_id, question, options, multi, closes_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(channel.id, req.userId, question, JSON.stringify(options), multi, closesAt);
+  const pollId = info.lastInsertRowid;
+  const msgInfo = db.prepare('INSERT INTO messages (channel_id, user_id, content, poll_id) VALUES (?, ?, ?, ?)')
+    .run(channel.id, req.userId, '', pollId);
+
+  const message = fullMessage(msgInfo.lastInsertRowid, req.userId);
+  getIO()?.to('server:' + channel.server_id).emit('message:new', { channelId: channel.id, serverId: channel.server_id, message });
+  res.json({ message });
 });
 
 /** Suppression d'un salon (propriétaire ou permission « Gérer les salons »). */

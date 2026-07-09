@@ -329,6 +329,9 @@ export default function AppLayout() {
         desktopNotify(`${message.display_name} vous a mentionné`, message.content);
         pushNotif({ icon: 'at', tone: 'purple', title: `${message.display_name} vous a mentionné`, body: message.content, nav: { type: 'channel', serverId, channelId } });
       }
+      if (message.poll && !focused && message.user_id !== user.id) {
+        pushNotif({ icon: 'chart-simple', tone: 'blue', title: 'Nouveau sondage', body: message.poll.question, nav: { type: 'channel', serverId, channelId } });
+      }
     };
     const onKicked = ({ serverId }) => {
       refreshServers();
