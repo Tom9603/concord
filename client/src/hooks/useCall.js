@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSocket } from '../socket.js';
+import { notify } from '../notice.js';
 import { api } from '../api.js';
 import { playPing } from '../notify.js';
 
@@ -80,7 +81,7 @@ export function useCall() {
 
   const startCall = useCallback(async (target) => {
     if (statusRef.current !== 'idle') return;
-    try { await getMic(); } catch { alert('Micro inaccessible : autorise le microphone pour appeler.'); return; }
+    try { await getMic(); } catch { notify('Micro inaccessible : autorise le microphone pour appeler.'); return; }
     setPeer(target);
     setStatus('calling');
     socket.emit('call:invite', { toUserId: target.id });
@@ -90,7 +91,7 @@ export function useCall() {
     try {
       await getMic();
     } catch {
-      alert('Micro inaccessible.');
+      notify('Micro inaccessible.');
       socket.emit('call:decline', { callId: callId.current });
       reset();
       return;
@@ -171,7 +172,7 @@ export function useCall() {
     const onEnded = () => reset();
     const onDeclined = () => reset();
     const onCanceled = () => reset();
-    const onUnavailable = () => { alert('Personne indisponible (hors ligne).'); reset(); };
+    const onUnavailable = () => { notify('Personne indisponible (hors ligne).'); reset(); };
 
     socket.on('call:incoming', onIncoming);
     socket.on('call:ringing', onRinging);

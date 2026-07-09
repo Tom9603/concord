@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { uploadFile } from '../api.js';
+import { notify } from '../notice.js';
 import Icon from './Icon.jsx';
 import Avatar from './Avatar.jsx';
 import GifPicker from './GifPicker.jsx';
@@ -85,14 +86,14 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) { alert('Fichier trop lourd (8 Mo max).'); return; }
+    if (file.size > 8 * 1024 * 1024) { notify('Fichier trop lourd (8 Mo max).'); return; }
     setUploading(true);
     try {
       const { url, name } = await uploadFile(await readAsDataURL(file), file.name);
       onSendAttachment(url, input.trim(), name);
       afterSend();
     } catch (err) {
-      alert(err.message);
+      notify(err.message);
     } finally {
       setUploading(false);
     }

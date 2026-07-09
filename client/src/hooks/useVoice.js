@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSocket } from '../socket.js';
+import { notify } from '../notice.js';
 import { api } from '../api.js';
 import { getAudio, setAudio, subscribeAudio } from '../audio.js';
 
@@ -175,7 +176,7 @@ export function useVoice() {
       raw = await navigator.mediaDevices.getUserMedia({ audio: a.inDevice ? { deviceId: { exact: a.inDevice } } : true });
     } catch {
       try { raw = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-      catch { alert('Micro inaccessible : autorisez le microphone dans votre navigateur pour parler.'); return; }
+      catch { notify('Micro inaccessible : autorisez le microphone dans votre navigateur pour parler.'); return; }
     }
     rawStream.current = raw;
     // Volume d'entrée : on route le micro dans un GainNode (repli sur le flux brut en cas d'échec).
@@ -238,7 +239,7 @@ export function useVoice() {
     try {
       cam = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } } });
     } catch {
-      alert('Caméra inaccessible : autorisez la caméra dans votre navigateur.');
+      notify('Caméra inaccessible : autorisez la caméra dans votre navigateur.');
       return;
     }
     camStream.current = cam;

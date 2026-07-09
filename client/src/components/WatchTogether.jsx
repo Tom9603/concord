@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getSocket } from '../socket.js';
 import Icon from './Icon.jsx';
+import { notify } from '../notice.js';
 
 // Charge l'API iframe YouTube une seule fois.
 let ytApiPromise = null;
@@ -43,7 +44,7 @@ export default function WatchTogether({ channelId, dmUserId, open = false, onClo
     const match = (e) => (isDm ? e.peerId === dmUserId : e.channelId === channelId);
     const onState = (e) => { if (match(e)) setSession(e.session); };
     const onSync = (e) => { if (match(e)) applySync(e.playing, e.time); };
-    const onErr = ({ message }) => alert(message);
+    const onErr = ({ message }) => notify(message);
     socket.on(stateEvent, onState);
     socket.on(syncEvent, onSync);
     socket.on('watch:error', onErr);

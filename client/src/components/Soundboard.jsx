@@ -3,6 +3,7 @@ import { api, uploadFile } from '../api.js';
 import { getSocket } from '../socket.js';
 import { BUILTIN_SOUNDS, playSound } from '../sounds.js';
 import Icon from './Icon.jsx';
+import { notify } from '../notice.js';
 
 const readAsDataURL = (file) =>
   new Promise((resolve, reject) => {
@@ -29,13 +30,13 @@ export default function Soundboard({ channelId, serverId }) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > 1024 * 1024) { alert('Son trop lourd (1 Mo max).'); return; }
+    if (file.size > 1024 * 1024) { notify('Son trop lourd (1 Mo max).'); return; }
     setBusy(true);
     try {
       const { url } = await uploadFile(await readAsDataURL(file), file.name);
       await api(`/sounds/${serverId}`, { method: 'POST', body: { name: file.name.replace(/\.[^.]+$/, '').slice(0, 40), url } });
       load();
-    } catch (err) { alert(err.message); } finally { setBusy(false); }
+    } catch (err) { notify(err.message); } finally { setBusy(false); }
   }
 
   async function remove(id) { await api(`/sounds/${serverId}/${id}`, { method: 'DELETE' }); load(); }

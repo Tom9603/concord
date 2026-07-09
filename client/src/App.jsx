@@ -5,6 +5,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import AppLayout from './pages/AppLayout.jsx';
 import UpdateManager from './components/UpdateManager.jsx';
+import Notices from './components/Notices.jsx';
 import { startUpdateWatch } from './update.js';
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/*" element={user ? <AppLayout /> : <Navigate to="/login" replace />} />
       </Routes>
       <UpdateManager />
+      <Notices />
     </>
   );
 }

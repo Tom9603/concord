@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { uploadImage } from '../api.js';
 import Icon from './Icon.jsx';
+import { notify } from '../notice.js';
 
 const blobToDataURL = (blob) =>
   new Promise((resolve, reject) => {
@@ -27,7 +28,7 @@ export default function VoiceRecorder({ onSend, disabled }) {
     try {
       s = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      alert('Micro inaccessible : autorisez le microphone pour un message vocal.');
+      notify('Micro inaccessible : autorisez le microphone pour un message vocal.');
       return;
     }
     stream.current = s;
@@ -52,7 +53,7 @@ export default function VoiceRecorder({ onSend, disabled }) {
         const url = await uploadImage(await blobToDataURL(blob));
         await onSend(url);
       } catch (err) {
-        alert(err.message);
+        notify(err.message);
       } finally {
         setBusy(false);
         setRecording(false);
