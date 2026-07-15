@@ -255,6 +255,9 @@ ensure('messages', 'reply_to_id', 'INTEGER');
 ensure('messages', 'pinned', 'INTEGER NOT NULL DEFAULT 0');
 ensure('messages', 'deleted', 'INTEGER NOT NULL DEFAULT 0'); // suppression douce (pierre tombale)
 ensure('messages', 'poll_id', 'INTEGER'); // message porteur d'un sondage
+ensure('users', 'email', 'TEXT');                              // email (activation, récupération)
+ensure('users', 'verified', 'INTEGER NOT NULL DEFAULT 1');    // compte activé (1 par défaut : comptes existants OK)
+ensure('users', 'verify_token', 'TEXT');                      // jeton d'activation par email
 ensure('dm_messages', 'attachment_url', 'TEXT');
 ensure('dm_messages', 'attachment_name', 'TEXT');
 ensure('dm_messages', 'reply_to_id', 'INTEGER');

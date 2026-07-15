@@ -31,14 +31,16 @@ export function AuthProvider({ children }) {
     connectSocket();
   }
 
-  async function register(username, password, display_name) {
-    const { token, user } = await api('/auth/register', {
+  async function register(username, password, display_name, email) {
+    const res = await api('/auth/register', {
       method: 'POST',
-      body: { username, password, display_name },
+      body: { username, password, display_name, email },
     });
-    setToken(token);
-    setUser(user);
+    if (res.pending) return { pending: true, email: res.email }; // activation par email requise
+    setToken(res.token);
+    setUser(res.user);
     connectSocket();
+    return { pending: false };
   }
 
   function logout() {
