@@ -38,8 +38,9 @@ export default function UpdateManager() {
   if (!u.available || !u.open) return null;
 
   return (
-    <div className="modal-backdrop" onClick={dismissUpdate}>
-      <div className="modal update-modal" onClick={(e) => e.stopPropagation()}>
+    // Pas de fermeture au clic à côté : on sort par « Plus tard » ou en mettant à jour.
+    <div className="modal-backdrop">
+      <div className="modal update-modal" role="dialog" aria-modal="true">
         <div className="um-badge"><Icon name="arrows-rotate" /></div>
         <h2>Nouvelle version disponible</h2>
         {u.version

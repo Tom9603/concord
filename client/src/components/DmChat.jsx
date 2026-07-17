@@ -6,6 +6,8 @@ import { renderRich } from '../richtext.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Composer from './Composer.jsx';
+import FileDropZone from './FileDropZone.jsx';
+import { sendFiles } from '../attachments.js';
 import Attachment from './Attachment.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
 import BookmarkButton from './BookmarkButton.jsx';
@@ -115,7 +117,10 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
     isOwn && { label: 'Supprimer', icon: 'trash', danger: true, onClick: () => setConfirmDel(m) },
   ]);
 
+  const sendAttachment = (url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name });
+
   return (
+    <FileDropZone onFiles={(files) => sendFiles(files, sendAttachment)} label={`Déposez pour envoyer à ${peer.display_name}`}>
     <div className="main-content">
       <div className="content-header">
         <Avatar user={peer} size={24} status={online ? peer.status : 'offline'} onClick={() => onOpenProfile?.(peer.id)} />
@@ -277,11 +282,12 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
             replyingTo={replyingTo}
             onClearReply={() => setReplyingTo(null)}
             onSendText={(t) => send({ content: t })}
-            onSendAttachment={(url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name })}
+            onSendAttachment={sendAttachment}
             onTyping={onTypingSignal}
             onWatch={() => setWatchOpen((v) => !v)}
             aiEnabled={aiEnabled}
             scheduleScope={{ toUserId: peer.id }}
+            draftKey={`dm:${peer.id}`}
           />
 
           {confirmDel && (
@@ -291,5 +297,6 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
         </div>
       </div>
     </div>
+    </FileDropZone>
   );
 }

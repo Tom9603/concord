@@ -28,6 +28,7 @@ import pollRoutes from './routes/polls.js';
 import aiRoutes from './routes/ai.js';
 import scheduledRoutes from './routes/scheduled.js';
 import sessionRoutes from './routes/sessions.js';
+import searchRoutes from './routes/search.js';
 import { setupSocket } from './socket.js';
 import { setIO } from './realtime.js';
 
@@ -62,6 +63,7 @@ app.use('/api/polls', pollRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/scheduled', scheduledRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/search', searchRoutes);
 
 // Fichiers uploadés : nosniff + téléchargement forcé pour tout ce qui n'est pas média (anti-XSS).
 app.use(

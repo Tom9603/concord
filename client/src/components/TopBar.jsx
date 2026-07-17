@@ -10,8 +10,9 @@ export default function TopBar({
   user, onHome, onBack, onForward, canGoBack, canGoForward, onOpenSettings, onOpenProfile, onLogout,
   voice, voiceName, onLeaveVoice,
   notifications, onOpenNotif, onMarkAllRead, onClearNotifs,
-  onOpenSaved, onOpenReminders,
+  onOpenSaved, onOpenReminders, onOpenQuickSearch,
 }) {
+  const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || '');
   const upd = useUpdate();
   const showUpdateReminder = upd.available && !upd.open && (upd.phase === 'idle' || upd.phase === 'available');
   return (
@@ -43,6 +44,11 @@ export default function TopBar({
         </button>
       )}
 
+      <button className="topbar-search" onClick={onOpenQuickSearch}>
+        <Icon name="magnifying-glass" />
+        <span>Rechercher</span>
+        <kbd>{isMac ? '⌘' : 'Ctrl'}+K</kbd>
+      </button>
       <button className="topbar-icon" title="Messages enregistrés" onClick={onOpenSaved}><Icon name="bookmark" /></button>
       <button className="topbar-icon" title="Mes rappels" onClick={onOpenReminders}><Icon name="clock" /></button>
 

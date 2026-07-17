@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
-import { uploadFile } from '../api.js';
+import { useEffect, useRef, useState } from 'react';
 import { notify } from '../notice.js';
 import { aiRewrite } from '../ai.js';
+import { sendFiles, filesFromPaste } from '../attachments.js';
+import { loadDraft, saveDraft, clearDraft } from '../drafts.js';
 import Icon from './Icon.jsx';
 import Avatar from './Avatar.jsx';
 import GifPicker from './GifPicker.jsx';
@@ -11,23 +12,16 @@ import QuickMessages from './QuickMessages.jsx';
 import ScheduleModal from './ScheduleModal.jsx';
 import AiConfirmModal from './AiConfirmModal.jsx';
 
-const readAsDataURL = (file) =>
-  new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-
 /**
  * Zone de saisie partagée (salons + DM).
  * - onSendText(text)                   : message texte
  * - onSendAttachment(url, text?, name?) : image, GIF, vocal ou fichier
  * - onTyping()                          : signale la frappe
  * - replyingTo / onClearReply           : réponse à un message
+ * - draftKey                            : identifie la conversation (brouillon conservé)
  */
-export default function Composer({ placeholder, onSendText, onSendAttachment, onTyping, replyingTo, onClearReply, onWatch, onPoll, mentionables, aiEnabled, scheduleScope }) {
-  const [input, setInput] = useState('');
+export default function Composer({ placeholder, onSendText, onSendAttachment, onTyping, replyingTo, onClearReply, onWatch, onPoll, mentionables, aiEnabled, scheduleScope, draftKey }) {
+  const [input, setInput] = useState(() => loadDraft(draftKey));
   const [uploading, setUploading] = useState(false);
   const [panel, setPanel] = useState(null); // 'gif' | 'emoji' | null
   const [mention, setMention] = useState(null); // { items, index } — suggestions @ (serveur uniquement)
@@ -35,6 +29,18 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
   const [scheduling, setScheduling] = useState(false); // fenêtre "programmer un message" ouverte
   const [aiConfirm, setAiConfirm] = useState(false); // confirmation avant de consommer une action IA
   const inputRef = useRef(null);
+
+  // Toute modification passe par ici : le brouillon suit la saisie.
+  function updateInput(next) {
+    setInput(next);
+    saveDraft(draftKey, next);
+  }
+
+  // Changement de conversation : on récupère le brouillon de la nouvelle.
+  useEffect(() => {
+    setInput(loadDraft(draftKey));
+    setMention(null);
+  }, [draftKey]);
 
   async function doRewrite() {
     const t = input.trim();
@@ -48,6 +54,7 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
 
   function afterSend() {
     setInput('');
+    clearDraft(draftKey);
     setMention(null);
     onClearReply?.();
   }
@@ -71,7 +78,7 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
     const before = input.slice(0, caret).replace(/@[\w.\-]*$/, `@${u.username} `);
     const after = input.slice(caret);
     const next = before + after;
-    setInput(next);
+    updateInput(next);
     setMention(null);
     requestAnimationFrame(() => { if (el) { el.focus(); el.selectionStart = el.selectionEnd = before.length; } });
   }
@@ -85,7 +92,7 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
   }
 
   function change(e) {
-    setInput(e.target.value);
+    updateInput(e.target.value);
     refreshMention(e.target.value, e.target.selectionStart);
     onTyping?.();
   }
@@ -98,21 +105,28 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
     else if (e.key === 'Escape') { e.preventDefault(); setMention(null); }
   }
 
-  async function onPickFile(e) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (file.size > 8 * 1024 * 1024) { notify('Fichier trop lourd (8 Mo max).'); return; }
+  /** Envoi commun au bouton « Joindre » et au collage. */
+  async function upload(files) {
     setUploading(true);
     try {
-      const { url, name } = await uploadFile(await readAsDataURL(file), file.name);
-      onSendAttachment(url, input.trim(), name);
-      afterSend();
-    } catch (err) {
-      notify(err.message);
+      if (await sendFiles(files, onSendAttachment, input.trim())) afterSend();
     } finally {
       setUploading(false);
     }
+  }
+
+  function onPickFile(e) {
+    const files = e.target.files;
+    e.target.value = '';
+    if (files?.length) upload(files);
+  }
+
+  // Coller une capture d'écran ou une image copiée dans un navigateur.
+  function onPaste(e) {
+    const files = filesFromPaste(e);
+    if (!files.length) return; // collage de texte : comportement normal
+    e.preventDefault();
+    upload(files);
   }
 
   return (
@@ -129,7 +143,7 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
         <GifPicker onSelect={(url) => { onSendAttachment(url, ''); afterSend(); setPanel(null); }} onClose={() => setPanel(null)} />
       )}
       {panel === 'emoji' && (
-        <EmojiPicker onPick={(em) => { setInput((v) => v + em); inputRef.current?.focus(); }} onClose={() => setPanel(null)} />
+        <EmojiPicker onPick={(em) => { updateInput(input + em); inputRef.current?.focus(); }} onClose={() => setPanel(null)} />
       )}
       {panel === 'quick' && (
         <QuickMessages onSelect={(t) => { onSendText(t); afterSend(); }} onClose={() => setPanel(null)} />
@@ -199,7 +213,7 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
           <div className="ai-rewrite-text">{rewrite.text}</div>
           <div className="ai-rewrite-actions">
             <button className="btn btn-ghost" onClick={() => setRewrite(null)}>Garder l'original</button>
-            <button className="btn" onClick={() => { setInput(rewrite.text); setRewrite(null); inputRef.current?.focus(); }}>Utiliser</button>
+            <button className="btn" onClick={() => { updateInput(rewrite.text); setRewrite(null); inputRef.current?.focus(); }}>Utiliser</button>
           </div>
         </div>
       )}
@@ -218,6 +232,7 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
             value={input}
             onChange={change}
             onKeyDown={onKeyDown}
+            onPaste={onPaste}
             onBlur={() => setTimeout(() => setMention(null), 120)}
             placeholder={uploading ? 'Envoi…' : placeholder}
             maxLength={2000}

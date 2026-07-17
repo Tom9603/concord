@@ -5,6 +5,8 @@ import { renderRich } from '../richtext.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Composer from './Composer.jsx';
+import FileDropZone from './FileDropZone.jsx';
+import { sendFiles } from '../attachments.js';
 import Attachment from './Attachment.jsx';
 import PollCard from './PollCard.jsx';
 import CreatePollModal from './CreatePollModal.jsx';
@@ -154,7 +156,10 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
   const send = (extra) => getSocket().emit('message:send', { channelId: channel.id, replyTo: replyingTo?.id, ...extra });
   const typingNames = Object.values(typing);
 
+  const sendAttachment = (url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name });
+
   return (
+    <FileDropZone onFiles={(files) => sendFiles(files, sendAttachment)} label={`Déposez pour envoyer dans ${channel.name}`}>
     <div className="chat-area">
       <WatchTogether channelId={channel.id} open={watchOpen} onClose={() => setWatchOpen(false)} />
       <button className="chat-pins-btn" title="Messages épinglés" onClick={togglePins}><Icon name="thumbtack" /></button>
@@ -309,13 +314,14 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
         replyingTo={replyingTo}
         onClearReply={() => setReplyingTo(null)}
         onSendText={(t) => send({ content: t })}
-        onSendAttachment={(url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name })}
+        onSendAttachment={sendAttachment}
         onTyping={onTyping}
         onWatch={() => setWatchOpen((v) => !v)}
         onPoll={() => setPollOpen(true)}
         mentionables={members}
         aiEnabled={aiEnabled}
         scheduleScope={{ channelId: channel.id }}
+        draftKey={`channel:${channel.id}`}
       />
 
       {pollOpen && <CreatePollModal channelId={channel.id} onClose={() => setPollOpen(false)} />}
@@ -325,5 +331,6 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
           onConfirm={() => getSocket().emit('message:delete', { messageId: confirmDel.id })} onClose={() => setConfirmDel(null)} />
       )}
     </div>
+    </FileDropZone>
   );
 }

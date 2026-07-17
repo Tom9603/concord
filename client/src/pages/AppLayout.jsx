@@ -29,6 +29,9 @@ import AiConfirmModal from '../components/AiConfirmModal.jsx';
 import { aiStatus } from '../ai.js';
 import CreateServerModal from '../components/CreateServerModal.jsx';
 import SettingsModal from '../components/SettingsModal.jsx';
+import QuickSearch from '../components/QuickSearch.jsx';
+import Onboarding, { onboardingHidden } from '../components/Onboarding.jsx';
+import { pruneDrafts } from '../drafts.js';
 import RolesModal from '../components/RolesModal.jsx';
 import MemberModal from '../components/MemberModal.jsx';
 import ServerSettingsModal from '../components/ServerSettingsModal.jsx';
@@ -68,6 +71,8 @@ export default function AppLayout() {
 
   const [modal, setModal] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false); // recherche rapide (Ctrl/Cmd + K)
+  const [tourOpen, setTourOpen] = useState(() => !onboardingHidden()); // présentation à chaque connexion
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [serverTasksOpen, setServerTasksOpen] = useState(false);
   const [memberTarget, setMemberTarget] = useState(null);
@@ -96,6 +101,19 @@ export default function AppLayout() {
   const [aiSummary, setAiSummary] = useState(null); // { channelId, channelName }
   const [aiAsk, setAiAsk] = useState(null); // confirmation avant de lancer le Rattrapage
   useEffect(() => { aiStatus().then(setAi).catch(() => {}); }, []);
+
+  // Recherche rapide : Ctrl+K (Cmd+K sur Mac), depuis n'importe où dans l'app.
+  useEffect(() => {
+    pruneDrafts();
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setQuickOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   const todoCount = tasks.filter((t) => t.status !== 'done' && t.assignee_id === user.id).length;
 
   // Serveurs affichés dans le rail vs archivés / cachés (préférence de vue perso).
@@ -432,6 +450,7 @@ export default function AppLayout() {
         onClearNotifs={clearNotifs}
         onOpenSaved={() => setSavedModal('saved')}
         onOpenReminders={() => setSavedModal('reminders')}
+        onOpenQuickSearch={() => setQuickOpen(true)}
       />
 
       <div className="pulsar-body">
@@ -556,6 +575,15 @@ export default function AppLayout() {
         />
       )}
 
+      {tourOpen && <Onboarding onClose={() => setTourOpen(false)} />}
+      {quickOpen && (
+        <QuickSearch
+          onClose={() => setQuickOpen(false)}
+          onGoServer={openServer}
+          onGoChannel={openServerChannel}
+          onGoDm={openDm}
+        />
+      )}
       {modal === 'create' && <CreateServerModal onClose={() => setModal(null)} onReady={handleServerReady} />}
       {modal === 'settings' && <SettingsModal onClose={() => setModal(null)} />}
       {modal === 'roles' && detail && <RolesModal serverId={detail.server.id} roles={detail.roles} onClose={() => setModal(null)} onChanged={() => refreshDetail(activeServerId, true)} />}
