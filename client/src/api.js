@@ -23,7 +23,14 @@ export async function api(path, { method = 'GET', body } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+  if (!res.ok) {
+    // On garde la réponse complète : certains appelants ont besoin du détail
+    // (compte à confirmer, délai avant nouvelle tentative...).
+    const err = new Error(data.error || 'Erreur serveur');
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
   return data;
 }
 

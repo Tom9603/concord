@@ -1,5 +1,36 @@
 import { mediaUrl } from '../api.js';
 import Icon from './Icon.jsx';
+import HoverCard from './HoverCard.jsx';
+
+/** Détails affichés au survol d'un serveur. */
+function ServerDetails({ sv, isOwner }) {
+  const members = sv.member_count || 0;
+  return (
+    <>
+      <div className="hc-title">{sv.name}</div>
+      <div className="hc-rows">
+        <span className="hc-row">
+          <Icon name={isOwner ? 'crown' : 'user'} />
+          {isOwner ? 'Vous êtes fondateur' : 'Membre'}
+        </span>
+        <span className="hc-row">
+          <Icon name="user-group" />
+          {members} membre{members > 1 ? 's' : ''}
+        </span>
+        {sv.mentions > 0 ? (
+          <span className="hc-row hc-alert">
+            <Icon name="at" />
+            {sv.mentions} mention{sv.mentions > 1 ? 's' : ''} pour vous
+          </span>
+        ) : sv.unread ? (
+          <span className="hc-row hc-alert"><Icon name="circle" /> Nouveaux messages</span>
+        ) : (
+          <span className="hc-row hc-calm"><Icon name="circle-check" /> À jour</span>
+        )}
+      </div>
+    </>
+  );
+}
 
 const SECTIONS = [
   { id: 'home', icon: 'house', label: 'Accueil' },
@@ -9,7 +40,7 @@ const SECTIONS = [
 ];
 
 /** Rail de navigation : sections de l'app (Accueil, Messages, Contacts, À faire) + serveurs. */
-export default function NavRail({ section, servers, activeServerId, hasUnreadDm, todoCount = 0, onSection, onSelectServer, onAddServer, onFeedback, serverMenu }) {
+export default function NavRail({ section, servers, activeServerId, hasUnreadDm, todoCount = 0, onSection, onSelectServer, onAddServer, onFeedback, serverMenu, currentUserId }) {
   return (
     <nav className="navrail">
       {SECTIONS.map((s) => (
@@ -36,21 +67,24 @@ export default function NavRail({ section, servers, activeServerId, hasUnreadDm,
       <div className="nav-servers">
         {servers.map((sv) => (
           <div className="nav-server-wrap" key={sv.id}>
-            <button
-              className={`nav-server ${section === 'server' && sv.id === activeServerId ? 'active' : ''}`}
-              style={{ background: sv.icon_url ? undefined : sv.icon_color }}
-              title={sv.name}
-              onClick={() => onSelectServer(sv.id)}
-              onContextMenu={serverMenu?.(sv)}
-            >
-              {sv.icon_url ? <img src={mediaUrl(sv.icon_url)} alt="" /> : sv.name.charAt(0).toUpperCase()}
-            </button>
+            <HoverCard content={<ServerDetails sv={sv} isOwner={sv.owner_id === currentUserId} />} className="hc-server">
+              <button
+                className={`nav-server ${section === 'server' && sv.id === activeServerId ? 'active' : ''}`}
+                style={{ background: sv.icon_url ? undefined : sv.icon_color }}
+                onClick={() => onSelectServer(sv.id)}
+                onContextMenu={serverMenu?.(sv)}
+              >
+                {sv.icon_url ? <img src={mediaUrl(sv.icon_url)} alt="" /> : sv.name.charAt(0).toUpperCase()}
+              </button>
+            </HoverCard>
             {sv.mentions > 0
               ? <span className="nav-server-badge">{sv.mentions > 9 ? '9+' : sv.mentions}</span>
               : sv.unread ? <span className="nav-server-dot" /> : null}
           </div>
         ))}
-        <button className="nav-server nav-add" title="Ajouter un serveur" onClick={onAddServer}><Icon name="plus" /></button>
+        <HoverCard content="Ajouter un serveur">
+          <button className="nav-server nav-add" onClick={onAddServer}><Icon name="plus" /></button>
+        </HoverCard>
       </div>
     </nav>
   );

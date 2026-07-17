@@ -278,7 +278,13 @@ ensure('messages', 'deleted', 'INTEGER NOT NULL DEFAULT 0'); // suppression douc
 ensure('messages', 'poll_id', 'INTEGER'); // message porteur d'un sondage
 ensure('users', 'email', 'TEXT');                              // email (activation, récupération)
 ensure('users', 'verified', 'INTEGER NOT NULL DEFAULT 1');    // compte activé (1 par défaut : comptes existants OK)
-ensure('users', 'verify_token', 'TEXT');                      // jeton d'activation par email
+ensure('users', 'verify_token', 'TEXT');                      // jeton d'activation par email (héritage)
+ensure('users', 'verify_code', 'TEXT');                       // code d'activation à 5 chiffres envoyé par email
+ensure('users', 'verify_expires', 'INTEGER');                 // fin de validité du code (timestamp ms)
+ensure('users', 'verify_tries', 'INTEGER NOT NULL DEFAULT 0');// essais ratés sur le code en cours
+ensure('users', 'verify_sent_at', 'INTEGER');                 // dernier envoi (anti-renvoi en rafale)
+ensure('users', 'reset_token', 'TEXT');                       // jeton « mot de passe oublié »
+ensure('users', 'reset_expires', 'INTEGER');                  // fin de validité du jeton (timestamp ms)
 ensure('users', 'privacy_dm', "TEXT NOT NULL DEFAULT 'everyone'");     // qui peut m'écrire : 'everyone' | 'friends'
 ensure('users', 'privacy_friend', "TEXT NOT NULL DEFAULT 'everyone'"); // qui peut m'ajouter : 'everyone' | 'none'
 ensure('users', 'hide_presence', 'INTEGER NOT NULL DEFAULT 0');        // apparaître hors ligne (masquer le statut en ligne)

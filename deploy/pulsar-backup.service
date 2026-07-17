@@ -1,0 +1,13 @@
+[Unit]
+Description=Sauvegarde de la base Pulsar
+After=network.target
+
+[Service]
+Type=oneshot
+User=pulsar
+Group=pulsar
+WorkingDirectory=/opt/pulsar
+Environment=PULSAR_DATA_DIR=/var/lib/pulsar
+Environment=PULSAR_BACKUP_DIR=/var/lib/pulsar/backups
+Environment=PULSAR_BACKUP_KEEP=30
+ExecStart=/usr/bin/node /opt/pulsar/deploy/backup.mjs

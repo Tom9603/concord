@@ -25,6 +25,7 @@ import SavedListModal from '../components/SavedListModal.jsx';
 import LeaveServerModal from '../components/LeaveServerModal.jsx';
 import TaskModal from '../components/TaskModal.jsx';
 import AiSummaryModal from '../components/AiSummaryModal.jsx';
+import AiConfirmModal from '../components/AiConfirmModal.jsx';
 import { aiStatus } from '../ai.js';
 import CreateServerModal from '../components/CreateServerModal.jsx';
 import SettingsModal from '../components/SettingsModal.jsx';
@@ -93,6 +94,7 @@ export default function AppLayout() {
   const [taskModal, setTaskModal] = useState(null); // { task } | { prefill, members }
   const [ai, setAi] = useState({ enabled: false });
   const [aiSummary, setAiSummary] = useState(null); // { channelId, channelName }
+  const [aiAsk, setAiAsk] = useState(null); // confirmation avant de lancer le Rattrapage
   useEffect(() => { aiStatus().then(setAi).catch(() => {}); }, []);
   const todoCount = tasks.filter((t) => t.status !== 'done' && t.assignee_id === user.id).length;
 
@@ -444,6 +446,7 @@ export default function AppLayout() {
           onAddServer={() => setModal('create')}
           onFeedback={() => setModal('feedback')}
           serverMenu={serverMenu}
+          currentUserId={user.id}
         />
 
         {section === 'server' && detail && (
@@ -492,7 +495,7 @@ export default function AppLayout() {
                   {activeChannel.type === 'text' && !activeChannel.client_label && <span className="topic">Salon textuel</span>}
                   <span className="spacer" />
                   {ai.enabled && activeChannel.type === 'text' && (
-                    <button className="header-btn header-ai" title="Rattrapage : résumé IA des nouveaux messages" onClick={() => setAiSummary({ channelId: activeChannel.id, channelName: activeChannel.name })}><Icon name="wand-magic-sparkles" /></button>
+                    <button className="header-btn header-ai" title="Rattrapage : résumé IA des nouveaux messages" onClick={() => setAiAsk({ channelId: activeChannel.id, channelName: activeChannel.name })}><Icon name="wand-magic-sparkles" /></button>
                   )}
                   <button className="header-btn" title="Tâches du serveur" onClick={() => setServerTasksOpen(true)}><Icon name="list-check" /></button>
                   <button className="header-btn" title="Tableau blanc partagé" onClick={() => setWhiteboardOpen(true)}><Icon name="palette" /></button>
@@ -574,6 +577,14 @@ export default function AppLayout() {
       )}
       {modal === 'editProfile' && <EditProfileModal onClose={() => setModal(null)} />}
       {modal === 'feedback' && <FeedbackModal onClose={() => setModal(null)} />}
+      {aiAsk && (
+        <AiConfirmModal
+          title={`Rattrapage · ${aiAsk.channelName}`}
+          description="L’assistant va lire les messages que vous n’avez pas lus dans ce salon et vous en faire un résumé."
+          onConfirm={() => { setAiSummary(aiAsk); setAiAsk(null); }}
+          onClose={() => setAiAsk(null)}
+        />
+      )}
       {aiSummary && <AiSummaryModal channelId={aiSummary.channelId} channelName={aiSummary.channelName} onClose={() => setAiSummary(null)} />}
       {savedModal && <SavedListModal mode={savedModal} currentUser={user} onClose={() => setSavedModal(null)} />}
       {leaveTarget && <LeaveServerModal server={leaveTarget} currentUserId={user.id} onDone={afterLeave} onClose={() => setLeaveTarget(null)} />}

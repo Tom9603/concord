@@ -1,0 +1,13 @@
+[Unit]
+Description=Sauvegarde nocturne de la base Pulsar
+
+[Timer]
+# Chaque nuit à 3h30 (heure du serveur).
+OnCalendar=*-*-* 03:30:00
+# Si le serveur était éteint à l'heure prévue, la sauvegarde se fait au démarrage.
+Persistent=true
+# Décalage aléatoire de quelques minutes (bonne pratique, évite les pics).
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

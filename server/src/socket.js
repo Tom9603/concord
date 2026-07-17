@@ -2,6 +2,19 @@ import db from './db.js';
 import { verifyToken, publicUser, sessionExists } from './auth.js';
 import { hasPermission, canAccessChannel, isOwner } from './permissions.js';
 import { getIO } from './realtime.js';
+import { take } from './ratelimit.js';
+
+// Anti-spam : plafond d'envoi par utilisateur. Large pour ne jamais gêner une
+// conversation animée, mais suffisant pour couper un envoi automatisé.
+const SEND_MAX = 20;        // messages...
+const SEND_WINDOW = 10_000; // ...par tranche de 10 secondes
+
+/** L'utilisateur peut-il envoyer ? Sinon, on le lui dit une fois. */
+function canSend(socket, userId) {
+  if (take(`send:${userId}`, SEND_MAX, SEND_WINDOW).ok) return true;
+  socket.emit('rate:limited', { message: 'Vous envoyez trop de messages à la suite. Patientez quelques secondes.' });
+  return false;
+}
 
 // Deux utilisateurs sont-ils amis (relation acceptée) ?
 const areFriends = (a, b) => !!db.prepare(
@@ -302,6 +315,7 @@ export function setupSocket(io) {
       const text = (content || '').trim().slice(0, 2000);
       const attach = validAttachment(attachmentUrl);
       if (!text && !attach) return;
+      if (!canSend(socket, userId)) return;
       const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(channelId);
       if (!channel || channel.type !== 'text') return;
       if (!canAccessChannel(channelId, userId)) return;
@@ -390,6 +404,7 @@ export function setupSocket(io) {
       const text = (content || '').trim().slice(0, 2000);
       const attach = validAttachment(attachmentUrl);
       if ((!text && !attach) || !toUserId) return;
+      if (!canSend(socket, userId)) return;
       const recipient = db.prepare('SELECT id, privacy_dm FROM users WHERE id = ?').get(toUserId);
       if (!recipient || recipient.id === userId) return;
 

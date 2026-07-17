@@ -36,11 +36,19 @@ export function AuthProvider({ children }) {
       method: 'POST',
       body: { username, password, display_name, email },
     });
-    if (res.pending) return { pending: true, email: res.email }; // activation par email requise
+    if (res.pending) return { pending: true, email: res.email }; // code de confirmation requis
     setToken(res.token);
     setUser(res.user);
     connectSocket();
     return { pending: false };
+  }
+
+  /** Confirme le compte avec le code reçu par email, puis connecte directement. */
+  async function verifyCode(email, code) {
+    const { token, user } = await api('/auth/verify-code', { method: 'POST', body: { email, code } });
+    setToken(token);
+    setUser(user);
+    connectSocket();
   }
 
   function logout() {
@@ -52,7 +60,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser: setUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyCode, logout, updateUser: setUser }}>
       {children}
     </AuthContext.Provider>
   );

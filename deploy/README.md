@@ -179,6 +179,58 @@ systemctl restart pulsar
 
 ---
 
+## Les sauvegardes automatiques
+
+Chaque nuit à 3h30, une copie compressée de la base est rangée dans
+`/var/lib/pulsar/backups`. Les copies de plus de 30 nuits sont supprimées toutes seules.
+
+Mise en place (une seule fois) :
+
+```bash
+cp /opt/pulsar/deploy/pulsar-backup.service /etc/systemd/system/
+cp /opt/pulsar/deploy/pulsar-backup.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now pulsar-backup.timer
+```
+
+Vérifier :
+
+```bash
+systemctl list-timers pulsar-backup    # prochaine exécution prévue
+systemctl start pulsar-backup          # forcer une sauvegarde tout de suite
+ls -lh /var/lib/pulsar/backups         # les copies existantes
+journalctl -u pulsar-backup -n 20 --no-pager
+```
+
+Restaurer une sauvegarde (Pulsar doit être arrêté pendant l'opération) :
+
+```bash
+systemctl stop pulsar
+gunzip -c /var/lib/pulsar/backups/pulsar-AAAA-MM-JJ-HH-MM-SS.db.gz > /var/lib/pulsar/pulsar.db
+chown pulsar:pulsar /var/lib/pulsar/pulsar.db
+systemctl start pulsar
+```
+
+Ces copies sont sur le même serveur : elles protègent d'une fausse manœuvre ou
+d'une base corrompue, pas de la perte du serveur. Pour aller plus loin, activez
+les snapshots Hetzner (environ 1 €/mois) ou copiez le dossier vers une Storage Box.
+
+---
+
+## Les emails automatiques
+
+Sans configuration SMTP, aucun email ne part : les comptes sont activés
+directement et le « mot de passe oublié » ne fonctionne pas. Pour les activer,
+renseignez les lignes `PULSAR_SMTP_*`, `PULSAR_MAIL_FROM` et `PULSAR_PUBLIC_URL`
+dans `/opt/pulsar/server/.env` (voir `server/.env.example`), puis :
+
+```bash
+systemctl restart pulsar
+journalctl -u pulsar -n 20 --no-pager   # les erreurs d'envoi y apparaissent
+```
+
+---
+
 ## Plus tard : les appels derrière un réseau d'entreprise
 
 Les appels et le partage d'écran fonctionnent en direct entre les participants. Derrière certains réseaux

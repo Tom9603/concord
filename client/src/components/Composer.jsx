@@ -9,6 +9,7 @@ import EmojiPicker from './EmojiPicker.jsx';
 import VoiceRecorder from './VoiceRecorder.jsx';
 import QuickMessages from './QuickMessages.jsx';
 import ScheduleModal from './ScheduleModal.jsx';
+import AiConfirmModal from './AiConfirmModal.jsx';
 
 const readAsDataURL = (file) =>
   new Promise((resolve, reject) => {
@@ -32,6 +33,7 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
   const [mention, setMention] = useState(null); // { items, index } — suggestions @ (serveur uniquement)
   const [rewrite, setRewrite] = useState(null); // { loading } | { text } — proposition de reformulation IA
   const [scheduling, setScheduling] = useState(false); // fenêtre "programmer un message" ouverte
+  const [aiConfirm, setAiConfirm] = useState(false); // confirmation avant de consommer une action IA
   const inputRef = useRef(null);
 
   async function doRewrite() {
@@ -132,6 +134,50 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
       {panel === 'quick' && (
         <QuickMessages onSelect={(t) => { onSendText(t); afterSend(); }} onClose={() => setPanel(null)} />
       )}
+      {aiConfirm && (
+        <AiConfirmModal
+          title="Reformuler mon message"
+          description="L’assistant va réécrire votre message plus clairement, sans fautes. Vous pourrez garder l’original si la proposition ne vous convient pas."
+          onConfirm={() => { setAiConfirm(false); doRewrite(); }}
+          onClose={() => setAiConfirm(false)}
+        />
+      )}
+
+      {panel === 'more' && (
+        <div className="composer-more">
+          <div className="composer-more-title">Actions</div>
+          <div className="composer-more-grid">
+            <label className="cm-item" title="Joindre un fichier">
+              <Icon name="paperclip" /><span>Joindre un fichier</span>
+              <input type="file" hidden onChange={(e) => { setPanel(null); onPickFile(e); }} />
+            </label>
+            <button type="button" className="cm-item" onClick={() => setPanel('quick')}>
+              <Icon name="bolt" /><span>Messages express</span>
+            </button>
+            {onWatch && (
+              <button type="button" className="cm-item" onClick={() => { setPanel(null); onWatch(); }}>
+                <Icon name="tv" /><span>Regarder ensemble</span>
+              </button>
+            )}
+            {onPoll && (
+              <button type="button" className="cm-item" onClick={() => { setPanel(null); onPoll(); }}>
+                <Icon name="chart-simple" /><span>Créer un sondage</span>
+              </button>
+            )}
+            {scheduleScope && (
+              <button type="button" className="cm-item" onClick={() => { setPanel(null); setScheduling(true); }}>
+                <Icon name="clock" /><span>Programmer l’envoi</span>
+              </button>
+            )}
+            {aiEnabled && (
+              <button type="button" className="cm-item cm-ai" disabled={!input.trim() || rewrite?.loading} title={input.trim() ? '' : 'Écrivez d’abord un message'}
+                onClick={() => { setPanel(null); setAiConfirm(true); }}>
+                <Icon name="wand-magic-sparkles" /><span>Reformuler (assistant)</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {mention && (
         <div className="mention-pop">
@@ -167,26 +213,6 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
 
       <form onSubmit={submit}>
         <div className="composer-inner">
-          <label className="composer-attach" title="Joindre un fichier">
-            <Icon name="paperclip" />
-            <input type="file" hidden onChange={onPickFile} />
-          </label>
-          <button type="button" className={`composer-attach gif-btn ${panel === 'gif' ? 'active' : ''}`} title="GIF" onClick={() => setPanel((p) => (p === 'gif' ? null : 'gif'))}>GIF</button>
-          <button type="button" className={`composer-attach ${panel === 'quick' ? 'active' : ''}`} title="Messages express" onClick={() => setPanel((p) => (p === 'quick' ? null : 'quick'))}><Icon name="bolt" /></button>
-          <button type="button" className={`composer-attach ${panel === 'emoji' ? 'active' : ''}`} title="Emoji" onClick={() => setPanel((p) => (p === 'emoji' ? null : 'emoji'))}><Icon name="face-smile" /></button>
-          {onWatch && (
-            <button type="button" className="composer-attach" title="Regarder / écouter ensemble" onClick={onWatch}><Icon name="tv" /></button>
-          )}
-          {onPoll && (
-            <button type="button" className="composer-attach" title="Créer un sondage" onClick={onPoll}><Icon name="chart-simple" /></button>
-          )}
-          {aiEnabled && (
-            <button type="button" className={`composer-attach composer-ai ${rewrite?.loading ? 'busy' : ''}`} title="Reformuler mon message (assistant)" onClick={doRewrite} disabled={!input.trim() || rewrite?.loading}><Icon name="wand-magic-sparkles" /></button>
-          )}
-          {scheduleScope && (
-            <button type="button" className={`composer-attach ${scheduling ? 'active' : ''}`} title="Programmer l’envoi" onClick={() => setScheduling(true)}><Icon name="clock" /></button>
-          )}
-          <VoiceRecorder onSend={(url) => { onSendAttachment(url, ''); afterSend(); }} disabled={uploading} />
           <input
             ref={inputRef}
             value={input}
@@ -197,6 +223,11 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
             maxLength={2000}
             disabled={uploading}
           />
+          {/* Accès rapide à droite : le reste des actions est dans le panneau « Plus ». */}
+          <button type="button" className={`composer-attach ${panel === 'more' ? 'active' : ''}`} title="Plus d’actions" onClick={() => setPanel((p) => (p === 'more' ? null : 'more'))}><Icon name="chevron-up" /></button>
+          <button type="button" className={`composer-attach gif-btn ${panel === 'gif' ? 'active' : ''}`} title="GIF" onClick={() => setPanel((p) => (p === 'gif' ? null : 'gif'))}>GIF</button>
+          <button type="button" className={`composer-attach ${panel === 'emoji' ? 'active' : ''}`} title="Emoji" onClick={() => setPanel((p) => (p === 'emoji' ? null : 'emoji'))}><Icon name="face-smile" /></button>
+          <VoiceRecorder onSend={(url) => { onSendAttachment(url, ''); afterSend(); }} disabled={uploading} />
         </div>
       </form>
     </div>

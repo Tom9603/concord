@@ -6,6 +6,7 @@ import { api } from '../api.js';
 import Logo from '../components/Logo.jsx';
 import Icon from '../components/Icon.jsx';
 import PasswordInput from '../components/PasswordInput.jsx';
+import VerifyCode from '../components/VerifyCode.jsx';
 
 export default function Login() {
   const { login } = useAuth();
@@ -15,27 +16,29 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [server, setServer] = useState(getServerUrl() || 'http://localhost:3001');
   const [error, setError] = useState('');
-  const [needsVerify, setNeedsVerify] = useState(false);
-  const [resent, setResent] = useState(false);
+  const [verifying, setVerifying] = useState(null); // email du compte restant à confirmer
   const [busy, setBusy] = useState(false);
 
   async function submit(e) {
     e.preventDefault();
-    setError(''); setNeedsVerify(false);
+    setError('');
     if (IS_DESKTOP) setServerUrl(server); // mémorise l'adresse du serveur choisie
     setBusy(true);
     try {
       await login(username, password);
     } catch (err) {
-      if (/non activé/i.test(err.message)) setNeedsVerify(true);
+      // Compte jamais confirmé : on renvoie un code et on bascule sur la saisie.
+      if (err.data?.needsVerification && err.data.email) {
+        api('/auth/resend', { method: 'POST', body: { email: err.data.email } }).catch(() => {});
+        setVerifying(err.data.email);
+        return;
+      }
       setError(err.message);
       setBusy(false);
     }
   }
 
-  async function resend() {
-    try { await api('/auth/resend', { method: 'POST', body: { login: username.trim() } }); setResent(true); } catch { /* neutre */ }
-  }
+  if (verifying) return <VerifyCode email={verifying} />;
 
   return (
     <div className="auth-wrap">
@@ -44,12 +47,8 @@ export default function Login() {
         <h1>Content de vous revoir&nbsp;!</h1>
         <p className="subtitle">Connectez-vous pour accéder à vos espaces.</p>
 
-        {justVerified && <div className="ok-msg"><Icon name="circle-check" /> Compte activé. Vous pouvez vous connecter.</div>}
+        {justVerified && <div className="ok-msg"><Icon name="circle-check" /> Compte confirmé. Vous pouvez vous connecter.</div>}
         {error && <div className="error-msg">{error}</div>}
-        {needsVerify && !resent && (
-          <button type="button" className="auth-resend" onClick={resend}><Icon name="paper-plane" /> Renvoyer l'email d'activation</button>
-        )}
-        {resent && <div className="ok-msg"><Icon name="circle-check" /> Si le compte existe, un email vient d'être renvoyé.</div>}
 
         {IS_DESKTOP && (
           <div className="field">
@@ -63,7 +62,10 @@ export default function Login() {
           <input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="username" />
         </div>
         <div className="field">
-          <label>Mot de passe</label>
+          <div className="field-head">
+            <label>Mot de passe</label>
+            <Link className="field-link" to="/forgot">Mot de passe oublié&nbsp;?</Link>
+          </div>
           <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
         </div>
 
