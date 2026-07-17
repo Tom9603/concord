@@ -128,10 +128,13 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
     };
   }, [channel.id, currentUser.id, showPins]);
 
+  // Descend en bas quand les messages arrivent et quand on entre dans le salon :
+  // « scrollHeight » n'est correct qu'après la peinture, d'où requestAnimationFrame.
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, typing]);
+    if (!el) return;
+    requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+  }, [messages, typing, channel.id]);
 
   function loadPins() { api(`/channels/${channel.id}/pins`).then(({ messages }) => setPins(messages)); }
   function togglePins() { setShowPins((v) => { if (!v) loadPins(); return !v; }); }

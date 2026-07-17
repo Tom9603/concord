@@ -24,9 +24,9 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(username, password) {
+  async function login(username, password, remember = true) {
     const { token, user } = await api('/auth/login', { method: 'POST', body: { username, password } });
-    setToken(token);
+    setToken(token, remember);
     setUser(user);
     connectSocket();
   }

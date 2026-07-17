@@ -1,11 +1,20 @@
 import { getServerUrl } from './config.js';
 
-let token = localStorage.getItem('token') || null;
+// « Se souvenir de moi » : quand la case est cochée, le jeton est enregistré
+// dans localStorage (persiste après fermeture du navigateur). Sinon, dans
+// sessionStorage — la session prend fin quand l'onglet ou le navigateur ferme.
+// Au démarrage, on lit d'abord la version persistante, puis la session.
+let token = localStorage.getItem('token') || sessionStorage.getItem('token') || null;
 
-export function setToken(t) {
+export function setToken(t, remember = true) {
   token = t;
-  if (t) localStorage.setItem('token', t);
-  else localStorage.removeItem('token');
+  if (t) {
+    if (remember) { localStorage.setItem('token', t); sessionStorage.removeItem('token'); }
+    else { sessionStorage.setItem('token', t); localStorage.removeItem('token'); }
+  } else {
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+  }
 }
 
 export function getToken() {

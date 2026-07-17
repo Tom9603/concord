@@ -34,11 +34,15 @@ function presets() {
  */
 export default function ScheduleModal({ scope, draft, onScheduled, onClose }) {
   const [value, setValue] = useState('');
+  // Le message se saisit directement ici : plus besoin de rouvrir la fenêtre
+  // après avoir tapé ailleurs. Le brouillon éventuel de la zone principale
+  // sert de point de départ.
+  const [message, setMessage] = useState(draft || '');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState([]);
 
-  const text = (draft || '').trim();
+  const text = message.trim();
   const minValue = toLocalInput(new Date(Date.now() + 60 * 1000)); // au moins 1 min plus tard
 
   async function reload() {
@@ -67,36 +71,39 @@ export default function ScheduleModal({ scope, draft, onScheduled, onClose }) {
   }
 
   return (
-    <Modal onClose={onClose} className="modal-schedule">
+    <Modal onClose={onClose} className="modal-schedule" dismissible>
+      <button type="button" className="modal-x" onClick={onClose} title="Fermer"><Icon name="xmark" /></button>
       <h2><Icon name="clock" /> Programmer un message</h2>
       <p className="modal-sub">Le message sera envoyé automatiquement à l’heure choisie, même si vous êtes déconnecté.</p>
 
       {error && <div className="error-msg">{error}</div>}
 
-      {text ? (
-        <div className="sched-preview">« {text.length > 140 ? text.slice(0, 140) + '…' : text} »</div>
-      ) : (
-        <div className="sched-hint">Écrivez votre message dans la zone de saisie, puis rouvrez cette fenêtre pour le programmer.</div>
-      )}
+      <div className="field">
+        <label>Message</label>
+        <textarea
+          className="sched-textarea"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Tapez votre message ici…"
+          rows={4}
+          maxLength={2000}
+        />
+      </div>
 
-      {text && (
-        <>
-          <div className="field">
-            <label>Quand l’envoyer&nbsp;?</label>
-            <div className="sched-presets">
-              {presets().map((p) => (
-                <button type="button" key={p.label} className={`sched-preset ${value === toLocalInput(p.d) ? 'active' : ''}`} onClick={() => setValue(toLocalInput(p.d))}>{p.label}</button>
-              ))}
-            </div>
-            <input type="datetime-local" value={value} min={minValue} onChange={(e) => setValue(e.target.value)} />
-          </div>
+      <div className="field">
+        <label>Quand l’envoyer&nbsp;?</label>
+        <div className="sched-presets">
+          {presets().map((p) => (
+            <button type="button" key={p.label} className={`sched-preset ${value === toLocalInput(p.d) ? 'active' : ''}`} onClick={() => setValue(toLocalInput(p.d))}>{p.label}</button>
+          ))}
+        </div>
+        <input type="datetime-local" value={value} min={minValue} onChange={(e) => setValue(e.target.value)} />
+      </div>
 
-          <div className="modal-actions">
-            <button className="btn btn-ghost" onClick={onClose}>Annuler</button>
-            <button className="btn" onClick={confirm} disabled={busy}>{busy ? 'Programmation…' : 'Programmer'}</button>
-          </div>
-        </>
-      )}
+      <div className="modal-actions">
+        <button className="btn btn-ghost" onClick={onClose}>Annuler</button>
+        <button className="btn" onClick={confirm} disabled={busy || !text}>{busy ? 'Programmation…' : 'Programmer'}</button>
+      </div>
 
       {pending.length > 0 && (
         <div className="sched-list">

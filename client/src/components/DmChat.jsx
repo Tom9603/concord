@@ -89,7 +89,12 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peer.id, currentUser.id, showPins]);
 
-  useEffect(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, [messages, peerTyping]);
+  // Descend en bas à chaque nouveau message ET en changeant d'interlocuteur.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+  }, [messages, peerTyping, peer.id]);
 
   function onTypingSignal() {
     const now = Date.now();

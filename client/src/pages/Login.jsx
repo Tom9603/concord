@@ -15,6 +15,7 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [server, setServer] = useState(getServerUrl() || 'http://localhost:3001');
+  const [remember, setRemember] = useState(true); // par défaut, on reste connecté
   const [error, setError] = useState('');
   const [verifying, setVerifying] = useState(null); // email du compte restant à confirmer
   const [busy, setBusy] = useState(false);
@@ -25,7 +26,7 @@ export default function Login() {
     if (IS_DESKTOP) setServerUrl(server); // mémorise l'adresse du serveur choisie
     setBusy(true);
     try {
-      await login(username, password);
+      await login(username, password, remember);
     } catch (err) {
       // Compte jamais confirmé : on renvoie un code et on bascule sur la saisie.
       if (err.data?.needsVerification && err.data.email) {
@@ -68,6 +69,11 @@ export default function Login() {
           </div>
           <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
         </div>
+
+        <label className="remember-me">
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+          <span>Se souvenir de moi sur cet appareil</span>
+        </label>
 
         <button className="btn" disabled={busy}>{busy ? 'Connexion…' : 'Se connecter'}</button>
         <p className="auth-switch">
