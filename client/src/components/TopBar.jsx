@@ -44,6 +44,7 @@ export default function TopBar({
         </button>
       )}
 
+      {/* Groupe « outils » : ce qu'on consulte. */}
       <button className="topbar-search" onClick={onOpenQuickSearch}>
         <Icon name="magnifying-glass" />
         <span>Rechercher</span>
@@ -51,7 +52,6 @@ export default function TopBar({
       </button>
       <button className="topbar-icon" title="Messages enregistrés" onClick={onOpenSaved}><Icon name="bookmark" /></button>
       <button className="topbar-icon" title="Mes rappels" onClick={onOpenReminders}><Icon name="clock" /></button>
-
       <NotificationBell
         notifications={notifications}
         onOpenNotif={onOpenNotif}
@@ -59,12 +59,15 @@ export default function TopBar({
         onClear={onClearNotifs}
       />
 
+      <div className="topbar-divider" />
+
+      {/* Groupe « vous » : contrôles audio, réglages, profil, regroupés à droite. */}
+      <AudioControls />
       <button className="topbar-icon" title="Paramètres" onClick={onOpenSettings}><Icon name="gear" /></button>
-      <div className="topbar-user" onClick={onOpenProfile} title="Mon profil">
+      <button className="topbar-user" onClick={onOpenProfile} title="Mon profil">
         <Avatar user={user} size={30} status={user.status} />
         <span className="tu-name">{user.display_name}</span>
-      </div>
-      <AudioControls />
+      </button>
     </header>
   );
 }

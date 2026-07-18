@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { ConfirmProvider } from './context/ConfirmContext.jsx';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './index.css';
 import { applyAppearance, loadAppearance } from './theme.js';
@@ -17,7 +18,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <HashRouter>
       <AuthProvider>
-        <App />
+        <ConfirmProvider>
+          <App />
+        </ConfirmProvider>
       </AuthProvider>
     </HashRouter>
   </React.StrictMode>

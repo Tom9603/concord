@@ -8,6 +8,7 @@ import FriendsListModal from './FriendsListModal.jsx';
 import CustomStatus from './CustomStatus.jsx';
 import { api, mediaUrl } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useConfirm } from '../context/ConfirmContext.jsx';
 
 const STATUS_LABEL = { online: 'En ligne', idle: 'Absent', dnd: 'Ne pas déranger', meeting: 'En réunion', invisible: 'Hors ligne' };
 const STATUS_OPTIONS = [
@@ -25,6 +26,7 @@ function memberSince(created) {
 /** Fiche de profil en modale (soi ou un tiers) : bannière, statut, mutuels, actions. */
 export default function ProfileModal({ userId, servers = [], onClose, onMessage, onEditProfile, onLogout, onOpenProfile, onOpenServer, canAdmin = false, onOpenAdmin }) {
   const { user: me, updateUser } = useAuth();
+  const confirm = useConfirm();
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,8 +56,20 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
 
   const act = async (fn) => { try { await fn(); load(); } catch (e) { setFlash(e.message); setTimeout(() => setFlash(''), 2500); } };
   const changeStatus = async (status) => { const { user } = await api('/users/me', { method: 'PATCH', body: { status } }); updateUser(user); load(); };
-  const removeContact = () => act(() => api(`/friends/${u.id}`, { method: 'DELETE' }));
-  const block = () => act(() => api(`/friends/${u.id}/block`, { method: 'POST' }));
+  const removeContact = async () => {
+    if (await confirm({
+      title: `Retirer ${u.display_name} de vos contacts ?`,
+      message: 'Vous ne serez plus en contact. Il faudra une nouvelle invitation pour le redevenir.',
+      confirmLabel: 'Retirer', danger: true,
+    })) act(() => api(`/friends/${u.id}`, { method: 'DELETE' }));
+  };
+  const block = async () => {
+    if (await confirm({
+      title: `Bloquer ${u.display_name} ?`,
+      message: 'Cette personne ne pourra plus vous écrire ni vous inviter, et sera retirée de vos contacts. Vous pourrez la débloquer à tout moment.',
+      confirmLabel: 'Bloquer', danger: true,
+    })) act(() => api(`/friends/${u.id}/block`, { method: 'POST' }));
+  };
   const unblock = () => act(() => api(`/friends/${u.id}/block`, { method: 'DELETE' }));
   const addContact = () => act(() => api('/friends/request', { method: 'POST', body: { username: u.username } }));
   const acceptContact = () => act(() => api(`/friends/${u.id}/accept`, { method: 'POST' }));

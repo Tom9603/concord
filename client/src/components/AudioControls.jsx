@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon.jsx';
-import AudioSettingsModal from './AudioSettingsModal.jsx';
 import { useAudio, setAudio, listAudioDevices } from '../audio.js';
 
 const supportsSink = typeof HTMLMediaElement !== 'undefined' && 'setSinkId' in HTMLMediaElement.prototype;
@@ -18,7 +17,6 @@ function Slider({ icon, label, value, onChange }) {
 export default function AudioControls() {
   const a = useAudio();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
   const ref = useRef(null);
 
@@ -67,14 +65,10 @@ export default function AudioControls() {
           <Slider icon="microphone" label="Volume d’entrée" value={a.inVol} onChange={(v) => setAudio({ inVol: v })} />
           <Slider icon="volume-high" label="Volume de sortie" value={a.outVol} onChange={(v) => setAudio({ outVol: v })} />
           <Slider icon="music" label="Volume soundboard" value={a.sbVol} onChange={(v) => setAudio({ sbVol: v })} />
-          <div className="am-sep" />
-          <button className="am-more" onClick={() => { setMenuOpen(false); setSettingsOpen(true); }}>
-            <Icon name="gear" /> Davantage de paramètres audio
-          </button>
+          {/* Le lien « Davantage de paramètres audio » a été retiré : les réglages
+              complets vivent dans Paramètres › Audio (une seule source). */}
         </div>
       )}
-
-      {settingsOpen && <AudioSettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

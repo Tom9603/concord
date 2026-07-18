@@ -19,6 +19,21 @@ export default function App() {
   // Retire le loader plein écran une fois l'authentification résolue.
   useEffect(() => { if (!loading) window.__hidePulsarSplash?.(); }, [loading]);
 
+  // Clic droit : on désactive le menu du navigateur là où il n'apporte rien,
+  // pour un ressenti d'application. Les menus personnalisés de Pulsar (messages,
+  // salons…) appellent déjà preventDefault + stopPropagation, donc n'arrivent
+  // jamais ici. On garde le menu natif dans les champs de texte, où couper /
+  // coller / correction orthographique sont utiles.
+  useEffect(() => {
+    const onCtx = (e) => {
+      const el = e.target;
+      if (el.closest('input, textarea, [contenteditable="true"], [contenteditable=""]')) return;
+      e.preventDefault();
+    };
+    document.addEventListener('contextmenu', onCtx);
+    return () => document.removeEventListener('contextmenu', onCtx);
+  }, []);
+
   // Pendant le chargement initial, le splash HTML reste affiché.
   if (loading) return null;
 

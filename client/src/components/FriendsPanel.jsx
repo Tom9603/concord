@@ -4,9 +4,11 @@ import { getSocket } from '../socket.js';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import { ctx } from '../contextmenu.js';
+import { useConfirm } from '../context/ConfirmContext.jsx';
 
 /** Écran « Amis » : liste, demandes reçues/envoyées, ajout, blocage. */
 export default function FriendsPanel({ onlineIds, onOpenDm, onOpenProfile }) {
+  const confirm = useConfirm();
   const [data, setData] = useState({ friends: [], incoming: [], outgoing: [], blocked: [] });
   const [username, setUsername] = useState('');
   const [msg, setMsg] = useState('');
@@ -33,6 +35,22 @@ export default function FriendsPanel({ onlineIds, onOpenDm, onOpenProfile }) {
   }
 
   const act = async (path, method = 'POST') => { try { await api(path, { method }); load(); } catch (e) { setMsg(e.message); } };
+
+  // Actions lourdes : confirmation résumant l'effet avant d'agir.
+  const removeContact = async (u) => {
+    if (await confirm({
+      title: `Retirer ${u.display_name} de vos contacts ?`,
+      message: 'Vous ne serez plus en contact. Vos conversations privées restent, mais il faudra une nouvelle invitation pour redevenir contacts.',
+      confirmLabel: 'Retirer', danger: true,
+    })) act(`/friends/${u.id}`, 'DELETE');
+  };
+  const blockContact = async (u) => {
+    if (await confirm({
+      title: `Bloquer ${u.display_name} ?`,
+      message: 'Cette personne ne pourra plus vous écrire ni vous envoyer d’invitation, et sera retirée de vos contacts. Vous pourrez la débloquer à tout moment.',
+      confirmLabel: 'Bloquer', danger: true,
+    })) act(`/friends/${u.id}/block`);
+  };
 
   const profileItem = (id) => (onOpenProfile ? { label: 'Voir le profil', icon: 'user', onClick: () => onOpenProfile(id) } : null);
 
@@ -82,12 +100,12 @@ export default function FriendsPanel({ onlineIds, onOpenDm, onOpenProfile }) {
               { label: 'Envoyer un message', icon: 'message', onClick: () => onOpenDm(u) },
               profileItem(u.id),
               { sep: true },
-              { label: 'Retirer le contact', icon: 'user-minus', danger: true, onClick: () => act(`/friends/${u.id}`, 'DELETE') },
-              { label: 'Bloquer', icon: 'ban', danger: true, onClick: () => act(`/friends/${u.id}/block`) },
+              { label: 'Retirer le contact', icon: 'user-minus', danger: true, onClick: () => removeContact(u) },
+              { label: 'Bloquer', icon: 'ban', danger: true, onClick: () => blockContact(u) },
             ])}>
               <button className="btn" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => onOpenDm(u)}><Icon name="message" /> Message</button>
-              <button className="btn btn-ghost" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => act(`/friends/${u.id}`, 'DELETE')}>Retirer</button>
-              <button className="btn btn-danger" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => act(`/friends/${u.id}/block`)}>Bloquer</button>
+              <button className="btn btn-ghost" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => removeContact(u)}>Retirer</button>
+              <button className="btn btn-danger" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => blockContact(u)}>Bloquer</button>
             </Row>
           ))}
         </section>

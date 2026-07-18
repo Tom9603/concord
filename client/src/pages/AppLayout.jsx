@@ -424,7 +424,15 @@ export default function AppLayout() {
     setModal(null);
   }
   async function createChannel(name, type, opts = {}) { await api(`/servers/${activeServerId}/channels`, { method: 'POST', body: { name, type, ...opts } }); await refreshDetail(activeServerId, true); }
-  async function deleteChannel(channelId) { await api(`/channels/${channelId}`, { method: 'DELETE' }); await refreshDetail(activeServerId, activeChannelId !== channelId); }
+  function deleteChannel(channelId) {
+    const ch = detail?.channels?.find((c) => c.id === channelId);
+    askConfirm({
+      title: `Supprimer le salon ${ch ? `« ${ch.name} »` : ''} ?`,
+      message: 'Tous les messages de ce salon seront définitivement effacés pour tous les membres. Cette action est irréversible.',
+      confirmLabel: 'Supprimer le salon', danger: true,
+      onConfirm: async () => { await api(`/channels/${channelId}`, { method: 'DELETE' }); await refreshDetail(activeServerId, activeChannelId !== channelId); },
+    });
+  }
   const openLeaveServer = () => detail?.server && setLeaveTarget(detail.server);
   async function startDm(username) { const { user: target } = await api('/dms/start', { method: 'POST', body: { username } }); openDm(target); }
 
