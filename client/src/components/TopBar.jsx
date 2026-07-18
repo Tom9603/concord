@@ -28,16 +28,24 @@ export default function TopBar({
         </div>
       </div>
 
-      {/* Zone centrale : la recherche, centrée. */}
+      {/* Zone centrale : la recherche et les icônes de consultation, ensemble et centrés. */}
       <div className="topbar-center">
         <button className="topbar-search" onClick={onOpenQuickSearch}>
           <Icon name="magnifying-glass" />
           <span>Rechercher</span>
           <kbd>{isMac ? '⌘' : 'Ctrl'}+K</kbd>
         </button>
+        <button className="topbar-icon" title="Messages enregistrés" onClick={onOpenSaved}><Icon name="bookmark" /></button>
+        <button className="topbar-icon" title="Mes rappels" onClick={onOpenReminders}><Icon name="clock" /></button>
+        <NotificationBell
+          notifications={notifications}
+          onOpenNotif={onOpenNotif}
+          onMarkAllRead={onMarkAllRead}
+          onClear={onClearNotifs}
+        />
       </div>
 
-      {/* Zone droite : ce qu'on consulte, puis le bloc personnel. */}
+      {/* Zone droite : le bloc personnel (audio, réglages, profil). */}
       <div className="topbar-right">
         {voice.connectedChannelId && (
           <div className="topbar-voice">
@@ -54,17 +62,6 @@ export default function TopBar({
             <Icon name="arrows-rotate" /> Mettre à jour
           </button>
         )}
-
-        <button className="topbar-icon" title="Messages enregistrés" onClick={onOpenSaved}><Icon name="bookmark" /></button>
-        <button className="topbar-icon" title="Mes rappels" onClick={onOpenReminders}><Icon name="clock" /></button>
-        <NotificationBell
-          notifications={notifications}
-          onOpenNotif={onOpenNotif}
-          onMarkAllRead={onMarkAllRead}
-          onClear={onClearNotifs}
-        />
-
-        <div className="topbar-divider" />
 
         <AudioControls />
         <button className="topbar-icon" title="Paramètres" onClick={onOpenSettings}><Icon name="gear" /></button>
