@@ -277,6 +277,20 @@ export function setupSocket(io) {
       db.prepare('UPDATE saved_messages SET notified = 1 WHERE id = ?').run(item.id);
       io.to('user:' + item.user_id).emit('reminder:due', { item });
     }
+
+    // Échéance des tâches : on prévient le responsable (ou, à défaut, le créateur)
+    // quand la date arrive. « due_notified » garantit un seul avertissement.
+    // due_at est en secondes (comme remind_at).
+    const tasksDue = db.prepare(`
+      SELECT t.*, cu.display_name AS creator_name
+      FROM tasks t JOIN users cu ON cu.id = t.creator_id
+      WHERE t.due_at IS NOT NULL AND t.due_notified = 0 AND t.status != 'done' AND t.due_at <= ?
+    `).all(now);
+    for (const task of tasksDue) {
+      db.prepare('UPDATE tasks SET due_notified = 1 WHERE id = ?').run(task.id);
+      const who = task.assignee_id || task.creator_id;
+      io.to('user:' + who).emit('task:due', { task });
+    }
   }, 20000);
 
   // Distributeur des messages programmés : envoie ceux arrivés à échéance,

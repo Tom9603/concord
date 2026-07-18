@@ -377,6 +377,14 @@ export default function AppLayout() {
       desktopNotify(title, item.content || 'pièce jointe', openSaved);
       pushNotif({ icon: 'bell', tone: 'amber', title, body: item.content || 'Pièce jointe', nav: { type: 'todo' } });
     };
+    const onTaskDue = ({ task }) => {
+      playPing();
+      const title = 'Tâche à échéance : ' + task.title;
+      const body = task.creator_id === user.id ? 'Que vous vous êtes fixée' : `Confiée par ${task.creator_name}`;
+      desktopNotify(title, body, openSaved);
+      pushNotif({ icon: 'circle-check', tone: 'amber', title, body, nav: { type: 'todo' } });
+      refreshTasks();
+    };
     const onSound = ({ sound }) => playSound(sound);
     const onTaskChanged = ({ type, task }) => {
       refreshTasks();
@@ -395,6 +403,7 @@ export default function AppLayout() {
     socket.on('server:kicked', onKicked);
     socket.on('server:added', onServerAdded);
     socket.on('reminder:due', onReminder);
+    socket.on('task:due', onTaskDue);
     socket.on('sound:play', onSound);
     socket.on('task:changed', onTaskChanged);
     return () => {
@@ -402,7 +411,7 @@ export default function AppLayout() {
       socket.off('server:updated', onServerUpdated); socket.off('dm:new', onDmNew);
       socket.off('message:new', onMessageNew); socket.off('server:kicked', onKicked);
       socket.off('server:added', onServerAdded);
-      socket.off('reminder:due', onReminder); socket.off('sound:play', onSound);
+      socket.off('reminder:due', onReminder); socket.off('task:due', onTaskDue); socket.off('sound:play', onSound);
       socket.off('task:changed', onTaskChanged);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

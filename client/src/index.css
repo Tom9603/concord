@@ -1913,9 +1913,25 @@ input[type="file"]::file-selector-button:hover {
 .task-creator { display: inline-flex; align-items: center; gap: 5px; color: var(--text-faint); }
 .task-creator .fa-solid { font-size: 10px; }
 .task-unassigned { color: var(--text-faint); font-style: italic; }
-.task-due { color: var(--text-muted); }
+.task-by { display: inline-flex; align-items: center; gap: 4px; color: var(--text-faint); }
+.task-by strong { color: var(--text-muted); font-weight: 600; }
+.task-due { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); }
 .task-due.overdue { color: var(--danger); font-weight: 600; }
+.task-due.task-nodue { color: var(--text-faint); }
 .task-src { background: var(--bg-input); padding: 1px 8px; border-radius: 6px; }
+/* Détail dépliable de la tâche */
+.task-detail { margin-top: 8px; }
+.task-detail-toggle {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--accent); font-size: 12.5px; font-weight: 600;
+}
+.task-detail-toggle:hover { text-decoration: underline; }
+.task-detail-text {
+  margin: 8px 0 0; padding: 10px 12px;
+  background: var(--bg-input); border-radius: 8px;
+  color: var(--text); font-size: 13.5px; line-height: 1.55; white-space: pre-wrap;
+}
 .task-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .task-actions select {
   background: var(--bg-input); border: 1px solid var(--border); color: var(--text); font-size: 12px;

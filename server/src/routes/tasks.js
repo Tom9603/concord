@@ -171,11 +171,13 @@ router.patch('/:id', (req, res) => {
   }
 
   const doneAt = status === 'done' ? (task.done_at || new Date().toISOString()) : null;
+  // Si on repousse l'échéance, on réarme la notification pour la nouvelle date.
+  const dueNotified = dueAt !== task.due_at ? 0 : task.due_notified;
 
   db.prepare(`
-    UPDATE tasks SET title = ?, description = ?, priority = ?, status = ?, due_at = ?, assignee_id = ?, done_at = ?
+    UPDATE tasks SET title = ?, description = ?, priority = ?, status = ?, due_at = ?, assignee_id = ?, done_at = ?, due_notified = ?
     WHERE id = ?
-  `).run(title, description, priority, status, dueAt, assigneeId, doneAt, task.id);
+  `).run(title, description, priority, status, dueAt, assigneeId, doneAt, dueNotified, task.id);
 
   const updated = taskRow(task.id);
   emitTask({ ...updated, creator_id: task.creator_id, assignee_id: task.assignee_id, server_id: task.server_id }, 'updated'); // prévient aussi l'ancien responsable

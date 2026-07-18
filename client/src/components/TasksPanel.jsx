@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Segmented from './Segmented.jsx';
@@ -19,6 +20,13 @@ function dueLabel(epoch) {
 
 /** Liste des tâches (assignées à moi ou créées par moi), regroupées par statut. */
 export default function TasksPanel({ tasks, currentUser, filter, onFilter, onToggle, onSetStatus, onEdit, onDelete, onNew }) {
+  // Tâches dont le détail est déplié (par identifiant).
+  const [openDetails, setOpenDetails] = useState(() => new Set());
+  const toggleDetail = (id) => setOpenDetails((prev) => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
   const shown = filter === 'mine'
     ? tasks.filter((t) => t.assignee_id === currentUser.id)
     : filter === 'assigned'
@@ -68,18 +76,33 @@ export default function TasksPanel({ tasks, currentUser, filter, onFilter, onTog
                       {t.title}
                     </div>
                     <div className="task-meta">
+                      {/* Qui a confié la tâche : explicite, plus une simple icône. */}
+                      <span className="task-by">
+                        {t.creator_id === currentUser.id
+                          ? (t.assignee_id === currentUser.id ? 'Créée par vous' : 'Confiée par vous')
+                          : <>Confiée par <strong>{t.creator_name}</strong></>}
+                      </span>
+                      {/* À qui elle est confiée. */}
                       {t.assignee_id ? (
-                        <span className="task-assignee">
+                        <span className="task-assignee" title="Responsable">
                           <Avatar user={{ display_name: t.assignee_name, avatar_color: t.assignee_color, avatar_url: t.assignee_avatar }} size={18} />
-                          {t.assignee_name}
+                          {t.assignee_id === currentUser.id ? 'Vous' : t.assignee_name}
                         </span>
                       ) : <span className="task-unassigned">Sans responsable</span>}
-                      <span className="task-creator" title="Créée par">
-                        <Icon name="pen-nib" /> {t.creator_id === currentUser.id ? 'Vous' : t.creator_name}
-                      </span>
-                      {due && <span className={`task-due ${due.overdue && t.status !== 'done' ? 'overdue' : ''}`}><Icon name={due.overdue && t.status !== 'done' ? 'triangle-exclamation' : 'calendar'} /> {due.txt}</span>}
+                      {due
+                        ? <span className={`task-due ${due.overdue && t.status !== 'done' ? 'overdue' : ''}`}><Icon name={due.overdue && t.status !== 'done' ? 'triangle-exclamation' : 'calendar'} /> {due.txt}</span>
+                        : <span className="task-due task-nodue"><Icon name="calendar" /> Sans échéance</span>}
                       {t.server_name && <span className="task-src">{t.channel_name || t.server_name}</span>}
                     </div>
+                    {t.description && (
+                      <div className="task-detail">
+                        <button type="button" className="task-detail-toggle" onClick={() => toggleDetail(t.id)}>
+                          <Icon name={openDetails.has(t.id) ? 'chevron-up' : 'chevron-down'} />
+                          {openDetails.has(t.id) ? 'Masquer le détail' : 'Voir le détail'}
+                        </button>
+                        {openDetails.has(t.id) && <p className="task-detail-text">{t.description}</p>}
+                      </div>
+                    )}
                   </div>
                   <div className="task-actions">
                     <select value={t.status} onChange={(e) => onSetStatus(t, e.target.value)} title="Statut">
