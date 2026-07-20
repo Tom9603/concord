@@ -2185,6 +2185,29 @@ input[type="file"]::file-selector-button:hover {
 }
 .confirm-text-input:focus { border-color: var(--danger); }
 
+/* Fenêtre « Transférer le message ». */
+.modal-forward { width: 460px; }
+.forward-preview {
+  margin: 4px 0 14px; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; color: var(--text-muted);
+  background: var(--bg-input); border: 1px solid var(--border);
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.forward-search {
+  width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 14px; margin-bottom: 10px;
+  background: var(--bg-input); border: 1px solid var(--border); color: var(--text); outline: none;
+}
+.forward-search:focus { border-color: rgba(139, 92, 246, 0.5); }
+.forward-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.forward-group { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint); padding: 8px 6px 4px; }
+.forward-row { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 8px 10px; border-radius: 10px; background: none; color: var(--text); }
+.forward-row:hover { background: var(--bg-hover); }
+.forward-ico { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: var(--bg-active); font-size: 13px; }
+.forward-row-main { display: flex; flex-direction: column; min-width: 0; }
+.forward-row-name { font-size: 14px; font-weight: 500; }
+.forward-row-sub { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.forward-empty { color: var(--text-muted); font-size: 13.5px; padding: 16px 6px; }
+.forward-sent { display: flex; align-items: center; gap: 9px; padding: 20px 6px; color: var(--online); font-size: 15px; font-weight: 600; }
+
 /* Compétences (et autres) sous forme d'étiquettes que l'on retire d'un clic. */
 .tags-input {
   display: flex; flex-wrap: wrap; gap: 7px; align-items: center;

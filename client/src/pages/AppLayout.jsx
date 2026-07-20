@@ -30,6 +30,7 @@ import { aiStatus } from '../ai.js';
 import CreateServerModal from '../components/CreateServerModal.jsx';
 import SettingsModal from '../components/SettingsModal.jsx';
 import QuickSearch from '../components/QuickSearch.jsx';
+import ForwardModal from '../components/ForwardModal.jsx';
 import Onboarding, { onboardingHidden } from '../components/Onboarding.jsx';
 import { pruneDrafts } from '../drafts.js';
 import RolesModal from '../components/RolesModal.jsx';
@@ -82,6 +83,15 @@ export default function AppLayout() {
   const [profileTarget, setProfileTarget] = useState(null); // id d'utilisateur
   const [adminOpen, setAdminOpen] = useState(false); // espace d'administration (admins uniquement)
   const [confirmState, setConfirmState] = useState(null); // confirmation clic droit { title, message, ... }
+  const [forwardMsg, setForwardMsg] = useState(null); // message à transférer
+
+  // Transférer un message vers un salon ou un contact.
+  const forwardTo = (target) => {
+    if (!forwardMsg) return;
+    const payload = { content: forwardMsg.content || '', attachmentUrl: forwardMsg.attachment_url || undefined, attachmentName: forwardMsg.attachment_name || undefined };
+    if (target.kind === 'channel') getSocket().emit('message:send', { channelId: target.id, ...payload });
+    else getSocket().emit('dm:send', { toUserId: target.id, ...payload });
+  };
 
   // Navigation « retour » / « avancer »
   const [history, setHistory] = useState([]);
@@ -303,10 +313,22 @@ export default function AppLayout() {
   });
 
   // Menu d'une conversation privée (liste des messages ou carte d'accueil).
+  const deleteConversation = (peer) => askConfirm({
+    title: `Supprimer la conversation avec ${peer.display_name} ?`,
+    message: 'Elle disparaîtra de votre liste. Les messages ne sont pas supprimés pour votre interlocuteur, et la conversation réapparaîtra s’il vous réécrit.',
+    confirmLabel: 'Supprimer', danger: true, requireText: 'supprimer',
+    onConfirm: async () => {
+      await api(`/dms/${peer.id}`, { method: 'DELETE' });
+      if (activeDm?.id === peer.id) { setActiveDm(null); setSection('home'); }
+      refreshConversations();
+    },
+  });
   const dmMenu = (peer) => ctx([
     { label: 'Ouvrir la conversation', icon: 'comment', onClick: () => openDm(peer) },
     { label: 'Appel vocal', icon: 'phone', onClick: () => call.startCall(peer) },
     { label: 'Voir le profil', icon: 'user', onClick: () => setProfileTarget(peer.id) },
+    { sep: true },
+    { label: 'Supprimer la conversation', icon: 'trash', danger: true, onClick: () => deleteConversation(peer) },
   ]);
 
   // (Le menu clic droit global de navigation a été retiré : il surgissait
@@ -512,7 +534,7 @@ export default function AppLayout() {
           )}
           {section === 'dm' && (
             activeDm
-              ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} onOpenProfile={setProfileTarget} onCreateTask={openTaskFromMessage} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} aiEnabled={ai.enabled} />
+              ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} onOpenProfile={setProfileTarget} onCreateTask={openTaskFromMessage} onForward={setForwardMsg} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} aiEnabled={ai.enabled} />
               : <div className="main-content"><div className="empty-hero"><h2><Icon name="comment" /> Messages</h2><p>Choisissez une conversation à gauche, ou ajoutez un contact.</p></div></div>
           )}
           {section === 'server' && (
@@ -542,7 +564,7 @@ export default function AppLayout() {
                       onToggleScreen={voice.toggleScreen} onSetPeerVolume={voice.setPeerVolume}
                       onRaiseHand={voice.raiseHand} onLowerHand={voice.lowerHand} />
                   ) : (
-                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} members={detail?.members} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} aiEnabled={ai.enabled} onThreadToggle={setThreadOpen} />
+                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} members={detail?.members} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} onForward={setForwardMsg} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} aiEnabled={ai.enabled} onThreadToggle={setThreadOpen} />
                   )}
                 </div>
               </div>
@@ -639,6 +661,10 @@ export default function AppLayout() {
           onConfirm={confirmState.onConfirm}
           onClose={() => setConfirmState(null)}
         />
+      )}
+
+      {forwardMsg && (
+        <ForwardModal message={forwardMsg} onSend={forwardTo} onClose={() => setForwardMsg(null)} />
       )}
     </div>
   );

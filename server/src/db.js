@@ -215,6 +215,15 @@ db.exec(`
     PRIMARY KEY (message_id, user_id, emoji)
   );
 
+  -- Conversation privée « supprimée » côté d'un utilisateur : masquée jusqu'au
+  -- prochain message (on stocke le dernier message vu au moment de la suppression).
+  CREATE TABLE IF NOT EXISTS dm_hidden (
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    peer_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    hidden_msg_id INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, peer_id)
+  );
+
   CREATE TABLE IF NOT EXISTS polls (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,

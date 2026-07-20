@@ -25,7 +25,7 @@ import { useConfirm } from '../context/ConfirmContext.jsx';
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
 /** Conversation privée : mêmes options qu'un salon (réponse, réactions, tâche, rappel, édition…). */
-export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile, onCreateTask, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg, aiEnabled }) {
+export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile, onCreateTask, onForward, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg, aiEnabled }) {
   const [messages, setMessages] = useState([]);
   const [peerTyping, setPeerTyping] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -129,6 +129,8 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
   };
   const msgMenu = (m, isOwn) => ctx(() => m.deleted ? [] : [
     { label: 'Répondre', icon: 'reply', onClick: () => setReplyingTo(m) },
+    onForward && { label: 'Transférer', icon: 'share', onClick: () => onForward(m) },
+    { sep: true },
     onCreateTask && { label: 'Créer une tâche', icon: 'circle-check', onClick: () => onCreateTask({ title: (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 140), description: m.content && m.content.length > 140 ? m.content : '', source_message_id: m.id, source_label: `@${peer.username}`, peer: { id: peer.id, display_name: peer.display_name } }) },
     { label: savedByMsg?.get(m.id) ? 'Retirer des enregistrés' : 'Enregistrer le message', icon: 'bookmark', onClick: () => toggleSave(m) },
     { label: m.pinned ? 'Détacher' : 'Épingler', icon: 'thumbtack', onClick: () => pin(m) },

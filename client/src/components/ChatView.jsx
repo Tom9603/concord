@@ -31,7 +31,7 @@ function shouldGroup(prev, cur) {
   return gap < 5 * 60 * 1000;
 }
 
-export default function ChatView({ channel, currentUser, canManage, members, onCreateTask, onOpenProfile, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg, aiEnabled, onThreadToggle }) {
+export default function ChatView({ channel, currentUser, canManage, members, onCreateTask, onOpenProfile, onForward, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg, aiEnabled, onThreadToggle }) {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -162,6 +162,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
   const msgMenu = (m, isOwn) => ctx(() => m.deleted ? [] : [
     { label: 'Répondre', icon: 'reply', onClick: () => setReplyingTo(m) },
     { label: m.thread?.reply_count ? 'Ouvrir le fil' : 'Répondre dans un fil', icon: 'comments', onClick: () => setThreadId(m.id) },
+    onForward && { label: 'Transférer', icon: 'share', onClick: () => onForward(m) },
     { sep: true },
     onCreateTask && { label: 'Créer une tâche', icon: 'circle-check', onClick: () => taskFromMsg(m) },
     { label: savedByMsg?.get(m.id) ? 'Retirer des enregistrés' : 'Enregistrer le message', icon: 'bookmark', onClick: () => toggleSave(m) },
