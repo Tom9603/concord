@@ -68,6 +68,12 @@ h1, h2, h3, .content-header > span, .sidebar-header > span, .brand-word, .voice-
 button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 input, textarea { font-family: inherit; }
 
+/* Curseur cohérent : tout ce qui est cliquable, ET ses éléments internes
+   (icônes, textes), partagent le même curseur. Évite le vacillement
+   flèche/main quand on glisse à l'intérieur d'un bouton ou d'une icône. */
+button, a, [role="button"], summary, .nav-item, .nav-server { cursor: pointer; }
+button *, a *, [role="button"] *, .nav-item *, .nav-server * { cursor: inherit; }
+
 .loading-screen {
   height: 100%;
   display: flex;
@@ -951,7 +957,15 @@ input[type="file"]::file-selector-button:hover {
   font-size: 15px;
   background: var(--bg-active);
   color: var(--text);
+  /* Largeur stable : le libellé change selon l'état (« Micro actif »/« Micro coupé »…)
+     mais le bouton ne bouge plus et ne pousse plus ses voisins. */
+  min-width: 200px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
+.voice-btn.join { min-width: 0; }
 .voice-btn.join { background: var(--grad); color: #fff; }
 .voice-btn.leave { background: var(--danger); color: #fff; }
 
