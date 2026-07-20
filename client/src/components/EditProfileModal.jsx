@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Modal from './Modal.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
+import EmojiPicker from './EmojiPicker.jsx';
 import { api, uploadImage, uploadFile, mediaUrl } from '../api.js';
 import { fileToImageDataUrl } from '../imagefile.js';
+import { openMenu } from '../contextmenu.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
-const COLORS = ['#5865F2', '#EB459E', '#57F287', '#FAA61A', '#ED4245', '#3498DB', '#9B59B6', '#14b8a6', '#e67e22'];
 const BANNERS = ['#1e1b4b', '#0f172a', '#3b0764', '#082f49', '#4a044e', '#1a2e05', '#450a0a', '#111827'];
 
 // Photos de profil prêtes à l'emploi : dégradés sobres et modernes (aucune image enfantine).
@@ -68,8 +69,32 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const [busy, setBusy] = useState(false);
   const [presetId, setPresetId] = useState(null);
   const [statusMinutes, setStatusMinutes] = useState(0); // expiration à appliquer au statut personnalisé
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [lightbox, setLightbox] = useState(null); // image affichée en grand (crayon « Afficher »)
+  const avatarInput = useRef(null);
+  const bannerInput = useRef(null);
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const pickPreset = (p) => { setPresetId(p.id); set('avatar_url', presetToPng(p)); };
+  const srcOf = (url) => (url.startsWith('data:') ? url : mediaUrl(url));
+
+  // Menu du crayon sur la photo de profil : afficher, changer, supprimer.
+  const avatarMenu = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const items = [];
+    if (f.avatar_url) items.push({ label: 'Afficher la photo', icon: 'eye', onClick: () => setLightbox(srcOf(f.avatar_url)) });
+    items.push({ label: f.avatar_url ? 'Changer la photo' : 'Ajouter une photo', icon: 'image', onClick: () => avatarInput.current?.click() });
+    if (f.avatar_url) items.push({ sep: true }, { label: 'Supprimer la photo', icon: 'trash', danger: true, onClick: () => { setPresetId(null); set('avatar_url', ''); } });
+    openMenu(e.clientX, e.clientY, items);
+  };
+  // Menu du crayon sur la bannière : afficher, changer, supprimer.
+  const bannerMenu = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const items = [];
+    if (f.banner_url) items.push({ label: 'Afficher la bannière', icon: 'eye', onClick: () => setLightbox(srcOf(f.banner_url)) });
+    items.push({ label: f.banner_url ? 'Changer la bannière' : 'Ajouter une bannière', icon: 'image', onClick: () => bannerInput.current?.click() });
+    if (f.banner_url) items.push({ sep: true }, { label: 'Retirer la bannière', icon: 'trash', danger: true, onClick: () => set('banner_url', '') });
+    openMenu(e.clientX, e.clientY, items);
+  };
 
   async function pickImage(key, maxMo, e) {
     const file = e.target.files?.[0];
@@ -122,6 +147,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const preview = { display_name: f.display_name, avatar_color: f.avatar_color, avatar_url: f.avatar_url, username: user.username };
 
   return (
+    <>
     <Modal onClose={onClose} className="modal-settings">
       <div className="settings-layout">
         <aside className="settings-menu">
@@ -139,9 +165,19 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
             {tab === 'profil' && (
               <>
                 <h2>Fiche profil</h2>
-                <div className="edit-banner-preview" style={{ background: f.banner_url ? `center/cover url(${f.banner_url.startsWith('data:') ? f.banner_url : mediaUrl(f.banner_url)})` : (f.banner_color || 'var(--bg-content-alt)') }}>
-                  <Avatar user={preview} size={64} status={f.status} />
+
+                {/* Champs d'import cachés, déclenchés par les crayons ou les boutons. */}
+                <input ref={avatarInput} type="file" accept="image/*" hidden onChange={(e) => pickImage('avatar_url', 1.5, e)} />
+                <input ref={bannerInput} type="file" accept="image/*,image/gif" hidden onChange={(e) => pickImage('banner_url', 3, e)} />
+
+                <div className="edit-banner-preview" style={{ background: f.banner_url ? `center/cover url(${srcOf(f.banner_url)})` : (f.banner_color || 'var(--bg-content-alt)') }}>
+                  <button type="button" className="edit-pencil banner-pencil" title="Modifier la bannière" onClick={bannerMenu}><Icon name="pencil" /></button>
+                  <div className="edit-avatar-wrap">
+                    <Avatar user={preview} size={72} status={f.status} />
+                    <button type="button" className="edit-pencil avatar-pencil" title="Modifier la photo" onClick={avatarMenu}><Icon name="pencil" /></button>
+                  </div>
                 </div>
+
                 <div className="settings-two">
                   <div className="field"><label>Nom affiché</label><input value={f.display_name} onChange={(e) => set('display_name', e.target.value)} /></div>
                   <div className="field"><label>Pronoms</label><input value={f.pronouns} onChange={(e) => set('pronouns', e.target.value)} placeholder="ex. il/lui, elle/elle, iel" maxLength={40} /></div>
@@ -155,46 +191,54 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
                 <div className="field">
                   <label>Statut personnalisé</label>
                   <div className="custom-status-row">
-                    <input className="cs-emoji" value={f.custom_status_emoji} onChange={(e) => set('custom_status_emoji', e.target.value)} placeholder="🙂" maxLength={8} title="Emoji (optionnel)" />
+                    <div className="cs-emoji-wrap">
+                      <button type="button" className="cs-emoji-btn" title="Choisir un emoji (facultatif)" onClick={() => setEmojiOpen((o) => !o)}>
+                        {f.custom_status_emoji ? <span className="cs-emoji-val">{f.custom_status_emoji}</span> : <Icon name="face-smile" />}
+                      </button>
+                      {f.custom_status_emoji && (
+                        <button type="button" className="cs-emoji-clear" title="Retirer l’emoji" onClick={() => set('custom_status_emoji', '')}><Icon name="xmark" /></button>
+                      )}
+                    </div>
                     <input className="cs-text" value={f.custom_status} onChange={(e) => set('custom_status', e.target.value)} placeholder="En congé, en réunion, focus…" maxLength={100} />
                   </div>
+                  {emojiOpen && (
+                    <div className="cs-emoji-pop">
+                      <EmojiPicker onPick={(em) => { set('custom_status_emoji', em); setEmojiOpen(false); }} onClose={() => setEmojiOpen(false)} />
+                    </div>
+                  )}
                   {f.custom_status.trim() && (
                     <select className="cs-expire" value={statusMinutes} onChange={(e) => setStatusMinutes(Number(e.target.value))}>
                       {EXPIRE.map((x) => <option key={x.v} value={x.v}>Effacer&nbsp;: {x.l.toLowerCase()}</option>)}
                     </select>
                   )}
-                  <p className="field-hint">Un petit message visible sur votre profil. Videz le champ pour le retirer.</p>
+                  <p className="field-hint">Un petit message visible sur votre profil. L’emoji est facultatif. Videz le champ pour le retirer.</p>
                 </div>
+
+                {/* Photo de profil : votre image d'abord, puis des visuels prêts. */}
                 <div className="field">
-                  <label>Photos de profil</label>
+                  <label>Photo de profil</label>
+                  <div className="import-row">
+                    <button type="button" className="btn btn-ghost import-btn" onClick={() => avatarInput.current?.click()}><Icon name="arrow-up-from-bracket" /> Importer votre image</button>
+                    {f.avatar_url && <button type="button" className="btn btn-ghost import-btn" onClick={() => { setPresetId(null); set('avatar_url', ''); }}>Retirer</button>}
+                  </div>
+                  <p className="field-hint">Ou choisissez un visuel prêt à l’emploi&nbsp;:</p>
                   <div className="avatar-presets">
                     {PRESET_AVATARS.map((p) => (
                       <button type="button" key={p.id} className={`avatar-preset ${presetId === p.id ? 'selected' : ''}`} style={{ background: presetCss(p) }} title="Choisir cette photo" onClick={() => pickPreset(p)} />
                     ))}
                   </div>
-                  <p className="field-hint">Des visuels sobres et modernes, en un clic.</p>
                 </div>
+
                 <div className="field">
-                  <label>Couleur d’avatar</label>
-                  <div className="color-swatches">
-                    {COLORS.map((c) => <div key={c} className={`color-swatch ${c === f.avatar_color && !f.avatar_url ? 'selected' : ''}`} style={{ background: c }} onClick={() => { setPresetId(null); set('avatar_url', ''); set('avatar_color', c); }} />)}
+                  <label>Bannière</label>
+                  <div className="import-row">
+                    <button type="button" className="btn btn-ghost import-btn" onClick={() => bannerInput.current?.click()}><Icon name="arrow-up-from-bracket" /> Importer une image</button>
+                    {f.banner_url && <button type="button" className="btn btn-ghost import-btn" onClick={() => set('banner_url', '')}>Retirer</button>}
                   </div>
-                </div>
-                <div className="field">
-                  <label>Votre propre image (optionnel)</label>
-                  <input type="file" accept="image/*" onChange={(e) => pickImage('avatar_url', 1.5, e)} />
-                  {f.avatar_url && <button type="button" className="btn btn-ghost" style={{ width: 'auto', padding: '6px 12px', marginTop: 8, fontSize: 13 }} onClick={() => { setPresetId(null); set('avatar_url', ''); }}>Retirer l’image</button>}
-                </div>
-                <div className="field">
-                  <label>Bannière (couleur)</label>
+                  <p className="field-hint">Ou une couleur unie&nbsp;:</p>
                   <div className="color-swatches">
                     {BANNERS.map((c) => <div key={c} className={`color-swatch ${c === f.banner_color && !f.banner_url ? 'selected' : ''}`} style={{ background: c }} onClick={() => { set('banner_color', c); set('banner_url', ''); }} />)}
                   </div>
-                </div>
-                <div className="field">
-                  <label>Bannière (image ou GIF, optionnel)</label>
-                  <input type="file" accept="image/*,image/gif" onChange={(e) => pickImage('banner_url', 3, e)} />
-                  {f.banner_url && <button type="button" className="btn btn-ghost" style={{ width: 'auto', padding: '6px 12px', marginTop: 8, fontSize: 13 }} onClick={() => set('banner_url', '')}>Retirer la bannière</button>}
                 </div>
                 <div className="field"><label>À propos de moi</label><textarea rows={3} maxLength={300} value={f.about} onChange={(e) => set('about', e.target.value)} placeholder="Présentez-vous en quelques mots…" /></div>
               </>
@@ -230,5 +274,11 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
         </div>
       </div>
     </Modal>
+    {lightbox && (
+      <div className="img-lightbox" role="button" title="Fermer" onClick={() => setLightbox(null)}>
+        <img src={lightbox} alt="" />
+      </div>
+    )}
+    </>
   );
 }

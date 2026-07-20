@@ -2011,8 +2011,8 @@ input[type="file"]::file-selector-button:hover {
 .access-name { flex: 1; }
 
 /* Réglages en menus */
-.modal-settings { width: 760px; max-width: 94vw; padding: 0; overflow: hidden; max-height: none; }
-.settings-layout { display: flex; height: min(580px, 82vh); }
+.modal-settings { width: 880px; max-width: 94vw; padding: 0; overflow: hidden; max-height: none; }
+.settings-layout { display: flex; height: min(680px, 88vh); }
 .settings-menu { width: 210px; flex-shrink: 0; background: var(--bg-sidebar); border-right: 1px solid var(--border); border-radius: 18px 0 0 18px; padding: 20px 12px; overflow-y: auto; }
 .settings-menu-title { font-family: var(--font-display); font-weight: 700; font-size: 16px; padding: 0 8px 14px; }
 .settings-menu-group { margin-bottom: 14px; }
@@ -2121,7 +2121,46 @@ input[type="file"]::file-selector-button:hover {
 .server-tip-icon img { width: 100%; height: 100%; object-fit: cover; }
 .server-tip-name { font-weight: 600; font-size: 14px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .server-tip-sub { font-size: 11.5px; color: var(--text-muted); }
-.edit-banner-preview { height: 92px; border-radius: 12px; display: flex; align-items: flex-end; padding: 12px; margin-bottom: 16px; }
+.edit-banner-preview { position: relative; height: 116px; border-radius: 12px; display: flex; align-items: flex-end; padding: 12px; margin-bottom: 18px; }
+.edit-avatar-wrap { position: relative; display: inline-flex; }
+
+/* Crayon-raccourci sur la photo et la bannière (afficher / changer / supprimer). */
+.edit-pencil {
+  position: absolute; display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%; font-size: 11px; color: #fff;
+  background: rgba(10, 11, 14, 0.7); border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+}
+.edit-pencil:hover { background: rgba(10, 11, 14, 0.92); }
+.banner-pencil { top: 10px; right: 10px; }
+.avatar-pencil { top: -3px; right: -3px; }
+
+/* Emoji du statut personnalisé : bouton + sélecteur, l'emoji est facultatif. */
+.cs-emoji-wrap { position: relative; flex-shrink: 0; }
+.cs-emoji-btn {
+  width: 48px; height: 40px; border-radius: 10px; font-size: 20px; color: var(--text-muted);
+  background: var(--bg-input); border: 1px solid var(--border);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.cs-emoji-btn:hover { background: var(--bg-hover); }
+.cs-emoji-val { font-size: 20px; line-height: 1; }
+.cs-emoji-clear {
+  position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--danger); color: #fff; font-size: 9px; border: 2px solid var(--bg-content);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.cs-emoji-pop { margin-top: 8px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg-sidebar); }
+.cs-emoji-pop .emoji-panel { position: static; width: 100%; height: 264px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+
+.import-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.import-btn { width: auto; padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 7px; }
+
+/* Visionneuse plein écran (crayon « Afficher la photo / la bannière »). */
+.img-lightbox {
+  position: fixed; inset: 0; z-index: 6000; padding: 40px; cursor: zoom-out;
+  background: rgba(0, 0, 0, 0.82); display: flex; align-items: center; justify-content: center;
+}
+.img-lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6); }
 
 /* Cloche de notifications */
 .notif-wrap { position: relative; }
