@@ -20,6 +20,7 @@ import DmTasksModal from './DmTasksModal.jsx';
 import { ctx } from '../contextmenu.js';
 import { userColor } from '../usercolor.js';
 import { formatTime, formatTimeDate } from '../datetime.js';
+import { useConfirm } from '../context/ConfirmContext.jsx';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -62,6 +63,19 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
   const loadPins = () => api(`/dms/${peer.id}/pins`).then(({ messages }) => setPins(messages)).catch(() => {});
   const togglePins = () => setShowPins((v) => { if (!v) loadPins(); return !v; });
   const pin = (m) => getSocket().emit('dm:pin', { messageId: m.id, pinned: !m.pinned });
+  const confirm = useConfirm();
+  // Clic sur une épingle : fermer le panneau et sauter au message.
+  const jumpFromPin = (id) => { setShowPins(false); requestAnimationFrame(() => jumpToMessage(id)); };
+  // Détacher demande confirmation (on ne détache pas par mégarde).
+  const removePin = async (m, e) => {
+    e.stopPropagation();
+    const ok = await confirm({
+      title: 'Détacher ce message ?',
+      message: 'Il ne sera plus épinglé dans cette conversation. Vous pourrez le ré-épingler plus tard.',
+      confirmLabel: 'Détacher', danger: true,
+    });
+    if (ok) pin(m);
+  };
 
   useEffect(() => {
     const socket = getSocket();
@@ -183,13 +197,17 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
               <div className="pins-head">Messages épinglés <button onClick={() => setShowPins(false)}><Icon name="xmark" /></button></div>
               {pins.length === 0 && <div className="pins-empty">Aucun message épinglé.</div>}
               {pins.map((m) => (
-                <div className="pin-item" key={m.id}>
+                <div
+                  className="pin-item" key={m.id} role="button" tabIndex={0}
+                  title="Aller au message" onClick={() => jumpFromPin(m.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jumpFromPin(m.id); } }}
+                >
                   <Avatar user={m} size={28} />
                   <div>
                     <div className="pin-author">{m.display_name}</div>
                     <div className="pin-text">{renderRich(m.content, currentUser) || (m.attachment_url ? 'pièce jointe' : '')}</div>
                   </div>
-                  <button className="pin-remove" title="Détacher" onClick={() => pin(m)}><Icon name="xmark" /></button>
+                  <button className="pin-remove" title="Détacher" onClick={(e) => removePin(m, e)}><Icon name="xmark" /></button>
                 </div>
               ))}
             </div>

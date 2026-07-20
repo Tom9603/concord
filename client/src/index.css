@@ -1100,11 +1100,13 @@ input[type="file"]::file-selector-button:hover {
 .msg-tombstone { font-size: 13px; font-style: italic; color: var(--text-faint); display: flex; align-items: center; gap: 7px; padding: 2px 0; }
 .message.is-deleted:hover { background: none; }
 .message.is-reply { background: rgba(59, 130, 246, 0.06); border-left: 2px solid rgba(59, 130, 246, 0.4); }
-/* Surlignage personnel (visible de moi seul) : message que j'ai mis en tâche / en rappel */
-.message.is-reminder { background: rgba(240, 178, 50, 0.07); border-left: 2px solid rgba(240, 178, 50, 0.5); }
-.message.is-task { background: rgba(34, 197, 94, 0.07); border-left: 2px solid rgba(34, 197, 94, 0.5); }
-.message.is-saved { background: rgba(139, 92, 246, 0.07); border-left: 2px solid rgba(139, 92, 246, 0.5); }
-.msg-mark { position: absolute; top: 6px; right: 14px; font-size: 12px; opacity: 0.85; pointer-events: none; }
+/* Repère personnel (visible de moi seul) d'un message lié à une tâche, un rappel
+   ou un enregistrement. On garde uniquement une fine barre à gauche + la petite
+   pastille (.msg-mark) : le fond coloré plein était trop voyant et déroutant. */
+.message.is-reminder { border-left: 2px solid rgba(240, 178, 50, 0.35); }
+.message.is-task { border-left: 2px solid rgba(34, 197, 94, 0.35); }
+.message.is-saved { border-left: 2px solid rgba(139, 92, 246, 0.35); }
+.msg-mark { position: absolute; top: 6px; right: 14px; font-size: 12px; opacity: 0.7; pointer-events: none; }
 .msg-mark.task { color: #4ade80; }
 .msg-mark.reminder { color: #f0b232; }
 .msg-mark.saved { color: var(--accent); }
@@ -1413,7 +1415,8 @@ input[type="file"]::file-selector-button:hover {
 .pins-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-weight: 700; border-bottom: 1px solid var(--bg-active); }
 .pins-head button { background: none; color: var(--text-muted); }
 .pins-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 14px; }
-.pin-item { display: flex; gap: 10px; padding: 10px 14px; border-bottom: 1px solid rgba(0, 0, 0, 0.15); }
+.pin-item { display: flex; gap: 10px; padding: 10px 14px; border-bottom: 1px solid rgba(0, 0, 0, 0.15); cursor: pointer; text-align: left; width: 100%; background: none; border-top: 0; border-left: 0; border-right: 0; }
+.pin-item:hover { background: var(--bg-hover); }
 .pin-author { font-weight: 600; font-size: 14px; }
 .pin-text { font-size: 13px; color: var(--text-muted); }
 .pin-remove { background: none; color: var(--text-faint); margin-left: auto; }

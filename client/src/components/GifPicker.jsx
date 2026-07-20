@@ -6,6 +6,7 @@ import Icon from './Icon.jsx';
 export default function GifPicker({ onSelect, onClose }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const debounce = useRef(null);
 
@@ -14,8 +15,8 @@ export default function GifPicker({ onSelect, onClose }) {
     clearTimeout(debounce.current);
     debounce.current = setTimeout(() => {
       api(`/gifs?q=${encodeURIComponent(query)}`)
-        .then(({ results }) => setResults(results || []))
-        .catch(() => setResults([]))
+        .then(({ results, error }) => { setResults(results || []); setError(error || null); })
+        .catch(() => { setResults([]); setError('GIF indisponibles pour le moment.'); })
         .finally(() => setLoading(false));
     }, 350);
     return () => clearTimeout(debounce.current);
@@ -34,7 +35,8 @@ export default function GifPicker({ onSelect, onClose }) {
       </div>
       <div className="gif-grid">
         {loading && <div className="gif-empty">Chargement…</div>}
-        {!loading && results.length === 0 && <div className="gif-empty">Aucun GIF trouvé.</div>}
+        {!loading && error && <div className="gif-empty">{error}</div>}
+        {!loading && !error && results.length === 0 && <div className="gif-empty">Aucun GIF trouvé.</div>}
         {results.map((g) => (
           <img
             key={g.id}

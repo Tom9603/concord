@@ -21,6 +21,7 @@ import ConfirmModal from './ConfirmModal.jsx';
 import { ctx } from '../contextmenu.js';
 import { userColor } from '../usercolor.js';
 import { formatTime, formatTimeDate } from '../datetime.js';
+import { useConfirm } from '../context/ConfirmContext.jsx';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -170,7 +171,29 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
     isOwn && { label: 'Modifier', icon: 'pen', onClick: () => startEdit(m) },
     (isOwn || canManage) && { label: 'Supprimer', icon: 'trash', danger: true, onClick: () => del(m) },
   ]);
+  const confirm = useConfirm();
   const pin = (m) => getSocket().emit('message:pin', { messageId: m.id, pinned: !m.pinned });
+  // Clic sur une épingle : on saute au message avec une brève surbrillance.
+  const jumpTo = (id) => {
+    setShowPins(false);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`msg-${id}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 1600);
+    });
+  };
+  // Détacher demande confirmation (action volontaire, on ne détache pas par mégarde).
+  const removePin = async (m, e) => {
+    e.stopPropagation();
+    const ok = await confirm({
+      title: 'Détacher ce message ?',
+      message: 'Il ne sera plus épinglé dans ce salon. Vous pourrez le ré-épingler plus tard.',
+      confirmLabel: 'Détacher', danger: true,
+    });
+    if (ok) pin(m);
+  };
   const startEdit = (m) => { setEditingId(m.id); setEditText(m.content); };
   function submitEdit(m) {
     const t = editText.trim();
@@ -196,13 +219,17 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
           <div className="pins-head">Messages épinglés <button onClick={() => setShowPins(false)}><Icon name="xmark" /></button></div>
           {pins.length === 0 && <div className="pins-empty">Aucun message épinglé.</div>}
           {pins.map((m) => (
-            <div className="pin-item" key={m.id}>
+            <div
+              className="pin-item" key={m.id} role="button" tabIndex={0}
+              title="Aller au message" onClick={() => jumpTo(m.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jumpTo(m.id); } }}
+            >
               <Avatar user={m} size={28} />
               <div>
                 <div className="pin-author">{m.display_name}</div>
                 <div className="pin-text">{renderRich(m.content, currentUser) || (m.attachment_url ? 'pièce jointe' : '')}</div>
               </div>
-              {canManage && <button className="pin-remove" title="Détacher" onClick={() => pin(m)}><Icon name="xmark" /></button>}
+              {canManage && <button className="pin-remove" title="Détacher" onClick={(e) => removePin(m, e)}><Icon name="xmark" /></button>}
             </div>
           ))}
         </div>
@@ -224,7 +251,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
           const isReminderMsg = !m.deleted && !isTaskMsg && reminderMsgIds?.has(m.id);
           const isSavedMsg = !m.deleted && !isTaskMsg && !isReminderMsg && savedMsgIds?.has(m.id);
           return (
-            <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''} ${isSavedMsg ? 'is-saved' : ''}`} key={m.id} onContextMenu={msgMenu(m, isOwn)}>
+            <div id={`msg-${m.id}`} className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''} ${isSavedMsg ? 'is-saved' : ''}`} key={m.id} onContextMenu={msgMenu(m, isOwn)}>
               {(isTaskMsg || isReminderMsg || isSavedMsg) && (
                 <span className={`msg-mark ${isTaskMsg ? 'task' : isReminderMsg ? 'reminder' : 'saved'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : isReminderMsg ? 'Vous vous êtes fait un rappel sur ce message' : 'Vous avez enregistré ce message'}>
                   <Icon name={isTaskMsg ? 'circle-check' : isReminderMsg ? 'clock' : 'bookmark'} />
