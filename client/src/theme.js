@@ -1,7 +1,7 @@
 // Préférences d'apparence (thème, couleur, densité, taille), stockées sur l'appareil.
 const KEY = 'pulsar-appearance';
 
-export const DEFAULTS = { theme: 'dark', accent: 'violet', density: 'cozy', textSize: 'normal', reduceMotion: false, highContrast: false };
+export const DEFAULTS = { theme: 'dark', accent: 'violet', density: 'cozy', textSize: 'normal', reduceMotion: false, highContrast: false, clock: '24' };
 
 // Palettes d'accent proposées à l'utilisateur.
 export const ACCENTS = {

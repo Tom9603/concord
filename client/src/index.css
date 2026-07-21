@@ -2804,6 +2804,9 @@ input[type="file"]::file-selector-button:hover {
 .cs-member { font-size: 12px; color: var(--text-faint); margin-top: 1px; }
 
 /* --- Heures calmes --- */
+.notif-what { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 8px; }
+.notif-what-title { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin: 8px 0 2px; }
+.notif-hint { color: var(--text-faint); font-weight: 400; font-size: 12px; }
 .quiet-block { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
 /* Tout sur UNE ligne, aligné au centre : plus de décalage vertical entre les
    inputs et la case « Tout le week-end ». */

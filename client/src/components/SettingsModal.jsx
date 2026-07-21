@@ -6,7 +6,9 @@ import Icon from './Icon.jsx';
 import { api, uploadFile, mediaUrl, downloadFile } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { isSoundEnabled, setSoundEnabled, isDesktopEnabled, setDesktopEnabled,
-  isQuietEnabled, setQuietEnabled, getQuietFrom, setQuietFrom, getQuietTo, setQuietTo, isQuietWeekend, setQuietWeekend } from '../notify.js';
+  isQuietEnabled, setQuietEnabled, getQuietFrom, setQuietFrom, getQuietTo, setQuietTo, isQuietWeekend, setQuietWeekend,
+  isDmNotif, setDmNotif, isMentionNotif, setMentionNotif, isTaskNotif, setTaskNotif, isAllMessagesNotif, setAllMessagesNotif } from '../notify.js';
+import { refreshClockPref } from '../datetime.js';
 import AudioSettingsPanel from './AudioSettingsPanel.jsx';
 import { loadAppearance, saveAppearance, applyAppearance, ACCENTS } from '../theme.js';
 import Logo from './Logo.jsx';
@@ -26,8 +28,8 @@ const STATUSES = [
 
 const MENU = [
   { group: 'Application', items: [
-    { id: 'appearance', icon: 'palette', label: 'Apparence', kw: 'thème couleur accent densité taille accessibilité animations mouvements contraste sombre clair affichage' },
-    { id: 'notif', icon: 'bell', label: 'Notifications', kw: 'notifications son bureau heures calmes alertes' },
+    { id: 'appearance', icon: 'palette', label: 'Apparence', kw: 'thème couleur accent densité taille accessibilité animations mouvements contraste sombre clair affichage heure format 12 24 horloge' },
+    { id: 'notif', icon: 'bell', label: 'Notifications', kw: 'notifications son bureau heures calmes alertes mentions messages privés tâches rappels salons' },
     { id: 'audio', icon: 'sliders', label: 'Audio et vocal', kw: 'audio vocal micro haut-parleur périphérique volume entrée sortie' },
   ] },
   { group: 'Compte', items: [
@@ -137,8 +139,21 @@ export default function SettingsModal({ onClose }) {
   // Apparence (préférences locales, appliquées en direct)
   const [appr, setAppr] = useState(loadAppearance());
   function changeAppr(patch) {
-    setAppr((a) => { const next = { ...a, ...patch }; saveAppearance(next); applyAppearance(next); return next; });
+    // On calcule et on enregistre AVANT de rafraîchir : le cache du format
+    // d'heure lit le stockage, il doit donc déjà contenir la nouvelle valeur
+    // (une fonction de mise à jour de state s'exécuterait trop tard).
+    const next = { ...appr, ...patch };
+    setAppr(next);
+    saveAppearance(next);
+    applyAppearance(next);
+    refreshClockPref();
+    window.dispatchEvent(new Event('pulsar:appearance'));
   }
+  // Préférences de notification fines (quoi déclenche une alerte).
+  const [nDm, setNDm] = useState(isDmNotif());
+  const [nMention, setNMention] = useState(isMentionNotif());
+  const [nTask, setNTask] = useState(isTaskNotif());
+  const [nAll, setNAll] = useState(isAllMessagesNotif());
 
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -377,6 +392,14 @@ export default function SettingsModal({ onClose }) {
               </div>
 
               <div className="appr-group">
+                <label>Format de l’heure</label>
+                <div className="appr-choices">
+                  <button type="button" className={`appr-choice ${appr.clock !== '12' ? 'active' : ''}`} onClick={() => changeAppr({ clock: '24' })}>24 heures (14:30)</button>
+                  <button type="button" className={`appr-choice ${appr.clock === '12' ? 'active' : ''}`} onClick={() => changeAppr({ clock: '12' })}>12 heures (2:30 PM)</button>
+                </div>
+              </div>
+
+              <div className="appr-group">
                 <label>Accessibilité</label>
                 <label className="settings-toggle">
                   <input type="checkbox" checked={!!appr.reduceMotion} onChange={(e) => changeAppr({ reduceMotion: e.target.checked })} />
@@ -402,6 +425,26 @@ export default function SettingsModal({ onClose }) {
                 <input type="checkbox" checked={desktop} onChange={(e) => { setDesktop(e.target.checked); setDesktopEnabled(e.target.checked); if (e.target.checked && typeof Notification !== 'undefined') Notification.requestPermission().catch(() => {}); }} />
                 <span>Notifications sur le bureau</span>
               </label>
+
+              <div className="notif-what">
+                <label className="notif-what-title">M’alerter pour</label>
+                <label className="settings-toggle">
+                  <input type="checkbox" checked={nDm} onChange={(e) => { setNDm(e.target.checked); setDmNotif(e.target.checked); }} />
+                  <span>Les messages privés</span>
+                </label>
+                <label className="settings-toggle">
+                  <input type="checkbox" checked={nMention} onChange={(e) => { setNMention(e.target.checked); setMentionNotif(e.target.checked); }} />
+                  <span>Les mentions dans un salon (quand on vous nomme)</span>
+                </label>
+                <label className="settings-toggle">
+                  <input type="checkbox" checked={nTask} onChange={(e) => { setNTask(e.target.checked); setTaskNotif(e.target.checked); }} />
+                  <span>Les tâches et les rappels</span>
+                </label>
+                <label className="settings-toggle">
+                  <input type="checkbox" checked={nAll} onChange={(e) => { setNAll(e.target.checked); setAllMessagesNotif(e.target.checked); }} />
+                  <span>Tous les messages des salons <span className="notif-hint">(un son discret, peut devenir bavard)</span></span>
+                </label>
+              </div>
 
               <div className="quiet-block">
                 <label className="settings-toggle">

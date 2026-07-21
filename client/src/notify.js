@@ -9,6 +9,17 @@ export const setSoundEnabled = (on) => localStorage.setItem('pulsar_sound', on ?
 export const isDesktopEnabled = () => localStorage.getItem('pulsar_desktop') !== 'off';
 export const setDesktopEnabled = (on) => localStorage.setItem('pulsar_desktop', on ? 'on' : 'off');
 
+// --- Ce qui déclenche une alerte (son + bureau). Activé par défaut, sauf
+// « tous les messages des salons » qui serait trop bavard. ---
+export const isDmNotif = () => localStorage.getItem('pulsar_notif_dm') !== 'off';
+export const setDmNotif = (on) => localStorage.setItem('pulsar_notif_dm', on ? 'on' : 'off');
+export const isMentionNotif = () => localStorage.getItem('pulsar_notif_mention') !== 'off';
+export const setMentionNotif = (on) => localStorage.setItem('pulsar_notif_mention', on ? 'on' : 'off');
+export const isTaskNotif = () => localStorage.getItem('pulsar_notif_task') !== 'off';
+export const setTaskNotif = (on) => localStorage.setItem('pulsar_notif_task', on ? 'on' : 'off');
+export const isAllMessagesNotif = () => localStorage.getItem('pulsar_notif_all') === 'on';
+export const setAllMessagesNotif = (on) => localStorage.setItem('pulsar_notif_all', on ? 'on' : 'off');
+
 // --- Heures calmes : plages où l'on ne veut ni son ni notification ---
 export const isQuietEnabled = () => localStorage.getItem('pulsar_quiet') === 'on';
 export const setQuietEnabled = (on) => localStorage.setItem('pulsar_quiet', on ? 'on' : 'off');

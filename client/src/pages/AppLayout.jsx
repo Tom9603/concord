@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useVoice } from '../hooks/useVoice.js';
 import { useCall } from '../hooks/useCall.js';
 import { makeCan } from '../permissions.js';
-import { initNotifications, playPing, desktopNotify } from '../notify.js';
+import { initNotifications, playPing, desktopNotify, isDmNotif, isMentionNotif, isTaskNotif, isAllMessagesNotif } from '../notify.js';
 import { playSound } from '../sounds.js';
 import { mentionsUser } from '../richtext.jsx';
 
@@ -63,6 +63,13 @@ export default function AppLayout() {
   const [activeServerId, setActiveServerId] = useState(null);
   const [detail, setDetail] = useState(null);
   const [activeChannelId, setActiveChannelId] = useState(null);
+
+  const [, setApprTick] = useState(0); // force le rafraîchissement quand une préférence d'affichage change (ex. format d'heure)
+  useEffect(() => {
+    const h = () => setApprTick((n) => n + 1);
+    window.addEventListener('pulsar:appearance', h);
+    return () => window.removeEventListener('pulsar:appearance', h);
+  }, []);
 
   const [onlineIds, setOnlineIds] = useState([]);
   const [voiceStates, setVoiceStates] = useState({});
@@ -360,10 +367,12 @@ export default function AppLayout() {
       const viewing = sectionRef.current === 'dm' && activeDmRef.current?.id === message.sender_id && !document.hidden;
       if (viewing) return;
       setHasUnreadDm(true);
-      playPing();
       const peer = { id: message.sender_id, username: message.username, display_name: message.display_name, avatar_color: message.avatar_color, avatar_url: message.avatar_url, status: 'online' };
       pushNotif({ icon: 'message', tone: 'blue', title: message.display_name, body: message.content || 'Pièce jointe', nav: { type: 'dm', peer } });
-      desktopNotify(`${message.display_name} · message privé`, message.content || 'Image', () => openDm(peer));
+      if (isDmNotif()) {
+        playPing();
+        desktopNotify(`${message.display_name} · message privé`, message.content || 'Image', () => openDm(peer));
+      }
     };
     const onMessageNew = ({ channelId, serverId, message }) => {
       if (message.user_id === user.id) return;
@@ -376,9 +385,14 @@ export default function AppLayout() {
         setServers((list) => list.map((s) => (s.id === serverId ? { ...s, unread: true, mentions: (s.mentions || 0) + (mentioned ? 1 : 0) } : s)));
       }
       if (mentioned && !focused) {
-        playPing();
-        desktopNotify(`${message.display_name} vous a mentionné`, message.content);
+        if (isMentionNotif()) {
+          playPing();
+          desktopNotify(`${message.display_name} vous a mentionné`, message.content);
+        }
         pushNotif({ icon: 'at', tone: 'purple', title: `${message.display_name} vous a mentionné`, body: message.content, nav: { type: 'channel', serverId, channelId } });
+      } else if (!mentioned && !focused && isAllMessagesNotif()) {
+        // Option « tous les messages des salons » : un son discret, sans notification bureau.
+        playPing();
       }
       if (message.poll && !focused && message.user_id !== user.id) {
         pushNotif({ icon: 'chart-simple', tone: 'blue', title: 'Nouveau sondage', body: message.poll.question, nav: { type: 'channel', serverId, channelId } });
@@ -395,16 +409,14 @@ export default function AppLayout() {
       pushNotif({ icon: 'server', tone: 'purple', title: 'Ajouté à un serveur', body: name || '', nav: { type: 'channel', serverId } });
     };
     const onReminder = ({ item }) => {
-      playPing();
       const title = 'Rappel : ' + (item.author_name || 'votre message');
-      desktopNotify(title, item.content || 'pièce jointe', openSaved);
+      if (isTaskNotif()) { playPing(); desktopNotify(title, item.content || 'pièce jointe', openSaved); }
       pushNotif({ icon: 'bell', tone: 'amber', title, body: item.content || 'Pièce jointe', nav: { type: 'todo' } });
     };
     const onTaskDue = ({ task }) => {
-      playPing();
       const title = 'Tâche à échéance : ' + task.title;
       const body = task.creator_id === user.id ? 'Que vous vous êtes fixée' : `Confiée par ${task.creator_name}`;
-      desktopNotify(title, body, openSaved);
+      if (isTaskNotif()) { playPing(); desktopNotify(title, body, openSaved); }
       pushNotif({ icon: 'circle-check', tone: 'amber', title, body, nav: { type: 'todo' } });
       refreshTasks();
     };
@@ -412,8 +424,7 @@ export default function AppLayout() {
     const onTaskChanged = ({ type, task }) => {
       refreshTasks();
       if (type === 'created' && task.assignee_id === user.id && task.creator_id !== user.id) {
-        playPing();
-        desktopNotify('Nouvelle tâche assignée', task.title, () => setSection('saved'));
+        if (isTaskNotif()) { playPing(); desktopNotify('Nouvelle tâche assignée', task.title, () => setSection('saved')); }
         pushNotif({ icon: 'circle-check', tone: 'green', title: 'Nouvelle tâche assignée', body: task.title, nav: { type: 'todo' } });
       }
     };
