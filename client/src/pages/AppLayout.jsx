@@ -467,8 +467,11 @@ export default function AppLayout() {
   const setTaskStatus = async (task, status) => { await api(`/tasks/${task.id}`, { method: 'PATCH', body: { status } }); refreshTasks(); };
   const deleteTask = (task) => askConfirm({ title: 'Supprimer la tâche', message: `« ${task.title} » sera supprimée définitivement.`, confirmLabel: 'Supprimer', danger: true, onConfirm: async () => { await api(`/tasks/${task.id}`, { method: 'DELETE' }); refreshTasks(); } });
 
-  function joinVoice(channel) { setVoiceInfo({ id: channel.id, name: channel.name }); voice.join(channel.id); }
+  function joinVoice(channel) { setVoiceInfo({ id: channel.id, name: channel.name, serverId: activeServerId }); voice.join(channel.id); }
   function leaveVoice() { voice.leave(); setVoiceInfo(null); }
+  // Revenir au salon vocal en cours, même si l'on regarde ailleurs.
+  function returnToVoice() { if (voiceInfo?.serverId) openServerChannel(voiceInfo.serverId, voiceInfo.id); }
+  const onVoiceChannel = section === 'server' && !!voiceInfo && activeServerId === voiceInfo.serverId && activeChannelId === voiceInfo.id;
 
   const activeChannel = detail?.channels.find((c) => c.id === activeChannelId) || null;
 
@@ -487,6 +490,8 @@ export default function AppLayout() {
         voice={voice}
         voiceName={voiceInfo?.name}
         onLeaveVoice={leaveVoice}
+        onReturnVoice={returnToVoice}
+        onVoiceChannel={onVoiceChannel}
         notifications={notifications}
         onOpenNotif={openNotif}
         onMarkAllRead={markAllRead}

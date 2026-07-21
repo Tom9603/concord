@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { api, mediaUrl, isAudio } from '../api.js';
+import { api } from '../api.js';
 import { getSocket } from '../socket.js';
 import { renderRich } from '../richtext.jsx';
 import Icon from './Icon.jsx';
+import Attachment from './Attachment.jsx';
 import { useConfirm } from '../context/ConfirmContext.jsx';
 
 function reminderLabel(item) {
@@ -76,9 +77,7 @@ export default function SavedPanel({ currentUser, embedded, filter = 'all' }) {
               {it.source ? <span> · {it.source}</span> : null}
             </div>
             {it.content && <div className="saved-text">{renderRich(it.content, currentUser)}</div>}
-            {it.attachment_url && (isAudio(it.attachment_url)
-              ? <audio className="msg-audio" controls src={mediaUrl(it.attachment_url)} />
-              : <img className="saved-img" src={mediaUrl(it.attachment_url)} alt="" onClick={() => window.open(mediaUrl(it.attachment_url), '_blank')} />)}
+            {it.attachment_url && <div className="saved-attach"><Attachment url={it.attachment_url} name={it.attachment_name} /></div>}
             {(() => { const r = reminderLabel(it); return r && <div className="saved-reminder"><Icon name={r.icon} /> {r.text}</div>; })()}
           </div>
           <div className="saved-actions">

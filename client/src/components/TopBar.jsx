@@ -10,7 +10,7 @@ const STATUS_LABEL = { online: 'En ligne', idle: 'Absent', dnd: 'Ne pas dérange
 /** Barre du haut : retour, logo (→ accueil), barre vocale, notifications, profil et réglages. */
 export default function TopBar({
   user, onHome, onBack, onForward, canGoBack, canGoForward, onOpenSettings, onOpenProfile, onLogout,
-  voice, voiceName, onLeaveVoice,
+  voice, voiceName, onLeaveVoice, onReturnVoice, onVoiceChannel,
   notifications, onOpenNotif, onMarkAllRead, onClearNotifs,
   onOpenSaved, onOpenReminders, onOpenQuickSearch,
 }) {
@@ -50,8 +50,12 @@ export default function TopBar({
       {/* Zone droite : le bloc personnel (audio, réglages, profil). */}
       <div className="topbar-right">
         {voice.connectedChannelId && (
-          <div className="topbar-voice">
-            <span className="tv-dot" /> {voiceName || 'Vocal'}
+          <div className={`topbar-voice ${onVoiceChannel ? '' : 'tv-away'}`}>
+            <button className="tv-return" onClick={onReturnVoice} title={onVoiceChannel ? 'Salon vocal en cours' : 'Revenir au salon vocal'} disabled={onVoiceChannel}>
+              <span className="tv-dot" />
+              <span className="tv-name">{voiceName || 'Vocal'}</span>
+              {!onVoiceChannel && <span className="tv-back"><Icon name="right-to-bracket" /> Revenir</span>}
+            </button>
             <button title={voice.muted ? 'Réactiver le micro' : 'Couper le micro'} onClick={voice.toggleMute}>
               <Icon name={voice.muted ? 'microphone-slash' : 'microphone'} />
             </button>
