@@ -58,7 +58,7 @@ router.post('/register', limit('register', 5, 3600, 'Trop de créations de compt
 
   const verified = mailEnabled ? 0 : 1; // sans email configuré : compte activé directement
   const info = db.prepare(
-    'INSERT INTO users (username, password_hash, display_name, avatar_color, email, verified, tos_accepted_at, tos_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO users (username, password_hash, display_name, avatar_color, email, verified, tos_accepted_at, tos_version, setup_completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)'
   ).run(clean, hashPassword(password), (display_name || '').trim() || clean, randomColor(), cleanEmail, verified, Date.now(), tosVersion);
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);

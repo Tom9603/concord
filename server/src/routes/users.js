@@ -53,6 +53,8 @@ router.patch('/me', (req, res) => {
     nextSocials = Object.keys(clean).length ? JSON.stringify(clean) : null;
   }
 
+  const nextSetup = b.setup_completed === undefined ? current.setup_completed : (b.setup_completed ? 1 : 0);
+
   // Confidentialité
   const nextPrivacyDm = DM_POLICIES.includes(b.privacy_dm) ? b.privacy_dm : current.privacy_dm;
   const nextPrivacyFriend = FRIEND_POLICIES.includes(b.privacy_friend) ? b.privacy_friend : current.privacy_friend;
@@ -74,14 +76,14 @@ router.patch('/me', (req, res) => {
     UPDATE users SET display_name = ?, avatar_color = ?, avatar_url = ?, about = ?, status = ?,
       headline = ?, company = ?, location = ?, website = ?, email_pro = ?, phone = ?, skills = ?,
       cv_url = ?, cv_name = ?, cv_summary = ?, pronouns = ?, banner_color = ?, banner_url = ?,
-      socials = ?,
+      socials = ?, setup_completed = ?,
       privacy_dm = ?, privacy_friend = ?, hide_presence = ?,
       custom_status = ?, custom_status_emoji = ?, custom_status_until = ?
     WHERE id = ?
   `).run(nextName, nextColor, nextAvatar, nextAbout, nextStatus,
     nextHeadline, nextCompany, nextLocation, nextWebsite, nextEmailPro, nextPhone, nextSkills,
     nextCvUrl, nextCvName, nextCvSummary, nextPronouns, nextBannerColor, nextBannerUrl,
-    nextSocials,
+    nextSocials, nextSetup,
     nextPrivacyDm, nextPrivacyFriend, nextHide,
     nextCustom, nextCustomEmoji, nextCustomUntil, req.userId);
 

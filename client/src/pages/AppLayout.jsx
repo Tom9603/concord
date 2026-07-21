@@ -32,6 +32,7 @@ import SettingsModal from '../components/SettingsModal.jsx';
 import QuickSearch from '../components/QuickSearch.jsx';
 import ForwardModal from '../components/ForwardModal.jsx';
 import Onboarding, { onboardingHidden } from '../components/Onboarding.jsx';
+import OnboardingSetup from '../components/OnboardingSetup.jsx';
 import { pruneDrafts } from '../drafts.js';
 import RolesModal from '../components/RolesModal.jsx';
 import MemberModal from '../components/MemberModal.jsx';
@@ -75,7 +76,8 @@ export default function AppLayout() {
   const [modal, setModal] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false); // recherche rapide (Ctrl/Cmd + K)
-  const [tourOpen, setTourOpen] = useState(() => !onboardingHidden()); // présentation à chaque connexion
+  const [setupOpen, setSetupOpen] = useState(() => !user.setup_completed); // personnalisation à la 1re connexion
+  const [tourOpen, setTourOpen] = useState(() => user.setup_completed && !onboardingHidden()); // présentation, après la perso
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [serverTasksOpen, setServerTasksOpen] = useState(false);
   const [memberTarget, setMemberTarget] = useState(null);
@@ -615,7 +617,8 @@ export default function AppLayout() {
         />
       )}
 
-      {tourOpen && <Onboarding onClose={() => setTourOpen(false)} />}
+      {setupOpen && <OnboardingSetup onDone={() => { setSetupOpen(false); setTourOpen(true); }} />}
+      {!setupOpen && tourOpen && <Onboarding onClose={() => setTourOpen(false)} />}
       {quickOpen && (
         <QuickSearch
           onClose={() => setQuickOpen(false)}

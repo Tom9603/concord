@@ -363,6 +363,7 @@ ensure('users', 'pronouns', 'TEXT');      // pronoms (inclusivité)
 ensure('users', 'banner_url', 'TEXT');    // bannière (image/gif) derrière l'avatar
 ensure('users', 'banner_color', 'TEXT');  // bannière (couleur unie) si pas d'image
 ensure('users', 'socials', 'TEXT');       // réseaux (JSON : { linkedin, instagram, ... })
+ensure('users', 'setup_completed', 'INTEGER NOT NULL DEFAULT 1'); // perso de 1re connexion faite (1 par défaut : comptes existants OK ; nouveaux comptes mis à 0)
 ensure('tasks', 'due_notified', 'INTEGER NOT NULL DEFAULT 0'); // échéance déjà notifiée (une seule fois)
 
 // Index dépendant d'une colonne ajoutée par « ensure » : il doit venir après.
