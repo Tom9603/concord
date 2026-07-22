@@ -6,30 +6,7 @@ import Avatar from './Avatar.jsx';
 import { api, uploadImage } from '../api.js';
 import { fileToImageDataUrl } from '../imagefile.js';
 import { useAuth } from '../context/AuthContext.jsx';
-
-// Quelques visuels d'avatar prêts à l'emploi (mêmes dégradés que l'édition du profil).
-const PRESETS = [
-  { id: 'violet', from: '#8b5cf6', to: '#6366f1' },
-  { id: 'ocean', from: '#3b82f6', to: '#06b6d4' },
-  { id: 'teal', from: '#14b8a6', to: '#10b981' },
-  { id: 'rose', from: '#fb7185', to: '#ec4899' },
-  { id: 'amber', from: '#f59e0b', to: '#ea580c' },
-  { id: 'indigo', from: '#6366f1', to: '#7c3aed' },
-  { id: 'sky', from: '#0ea5e9', to: '#2563eb' },
-  { id: 'lime', from: '#22c55e', to: '#65a30d' },
-];
-const presetCss = (p) => `radial-gradient(circle at 72% 26%, rgba(255,255,255,0.28), transparent 58%), linear-gradient(135deg, ${p.from}, ${p.to})`;
-function presetToPng(p, size = 256) {
-  const c = document.createElement('canvas'); c.width = c.height = size;
-  const x = c.getContext('2d');
-  const g = x.createLinearGradient(0, 0, size, size);
-  g.addColorStop(0, p.from); g.addColorStop(1, p.to);
-  x.fillStyle = g; x.fillRect(0, 0, size, size);
-  const r = x.createRadialGradient(size * 0.72, size * 0.26, size * 0.04, size * 0.72, size * 0.26, size * 0.75);
-  r.addColorStop(0, 'rgba(255,255,255,0.30)'); r.addColorStop(1, 'rgba(255,255,255,0)');
-  x.fillStyle = r; x.fillRect(0, 0, size, size);
-  return c.toDataURL('image/png');
-}
+import { PRESET_AVATARS, assetToDataUrl } from '../avatars.js';
 
 const TOTAL = 3;
 
@@ -43,19 +20,22 @@ export default function OnboardingSetup({ onDone }) {
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState(user.display_name || '');
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || '');
-  const [presetId, setPresetId] = useState(null);
+  const [pickedAvatar, setPickedAvatar] = useState(null); // avatar prêt-à-l'emploi sélectionné (pour le surlignage)
   const [about, setAbout] = useState(user.about || '');
   const [sound, setSound] = useState(() => localStorage.getItem('pulsar_sound') !== '0');
   const [desktop, setDesktop] = useState(() => localStorage.getItem('pulsar_desktop') === '1');
   const [busy, setBusy] = useState(false);
 
   const last = step === TOTAL - 1;
-  const pickPreset = (p) => { setPresetId(p.id); setAvatarUrl(presetToPng(p)); };
+  async function pickPreset(url) {
+    setPickedAvatar(url);
+    try { setAvatarUrl(await assetToDataUrl(url)); } catch { /* ignoré */ }
+  }
 
   async function pickImage(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    try { setPresetId(null); setAvatarUrl(await fileToImageDataUrl(file, { max: 256, square: true })); } catch { /* ignoré */ }
+    try { setPickedAvatar(null); setAvatarUrl(await fileToImageDataUrl(file, { max: 256, square: true })); } catch { /* ignoré */ }
   }
 
   async function finish() {
@@ -90,8 +70,10 @@ export default function OnboardingSetup({ onDone }) {
             <p className="ob-text">Prenons un instant pour personnaliser votre espace. Tout reste modifiable plus tard.</p>
             <div className="obs-avatar"><Avatar user={preview} size={76} /></div>
             <div className="obs-presets">
-              {PRESETS.map((p) => (
-                <button type="button" key={p.id} className={`avatar-preset ${presetId === p.id ? 'selected' : ''}`} style={{ background: presetCss(p) }} title="Choisir ce visuel" onClick={() => pickPreset(p)} />
+              {PRESET_AVATARS.map((url) => (
+                <button type="button" key={url} className={`avatar-preset ${pickedAvatar === url ? 'selected' : ''}`} title="Choisir cet avatar" onClick={() => pickPreset(url)}>
+                  <img src={url} alt="" />
+                </button>
               ))}
             </div>
             <label className="btn btn-ghost import-btn obs-import">

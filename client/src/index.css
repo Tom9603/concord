@@ -1091,7 +1091,8 @@ input[type="file"]::file-selector-button:hover {
 
 /* Photos de profil prêtes à l'emploi */
 .avatar-presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 10px; }
-.avatar-preset { aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 3px solid transparent; padding: 0; transition: transform 0.12s, border-color 0.12s; }
+.avatar-preset { aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 3px solid transparent; padding: 0; overflow: hidden; background: var(--bg-input); transition: transform 0.12s, border-color 0.12s; }
+.avatar-preset img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .avatar-preset:hover { transform: translateY(-2px); }
 .avatar-preset.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
 .field-hint { color: var(--text-muted); font-size: 12.5px; margin-top: 8px; }

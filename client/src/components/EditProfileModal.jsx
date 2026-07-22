@@ -7,6 +7,7 @@ import { api, uploadImage, uploadFile, mediaUrl } from '../api.js';
 import { fileToImageDataUrl } from '../imagefile.js';
 import { openMenu } from '../contextmenu.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { PRESET_AVATARS, assetToDataUrl } from '../avatars.js';
 
 const BANNERS = ['#1e1b4b', '#0f172a', '#3b0764', '#082f49', '#4a044e', '#1a2e05', '#450a0a', '#111827'];
 
@@ -40,34 +41,6 @@ const SOCIALS = [
   { key: 'youtube', label: 'YouTube', icon: 'youtube', ph: 'https://youtube.com/@…' },
 ];
 const parseSocials = (raw) => { try { const o = JSON.parse(raw || '{}'); return o && typeof o === 'object' ? o : {}; } catch { return {}; } };
-
-// Photos de profil prêtes à l'emploi : dégradés sobres et modernes (aucune image enfantine).
-const PRESET_AVATARS = [
-  { id: 'violet', from: '#8b5cf6', to: '#6366f1' },
-  { id: 'ocean', from: '#3b82f6', to: '#06b6d4' },
-  { id: 'teal', from: '#14b8a6', to: '#10b981' },
-  { id: 'slate', from: '#64748b', to: '#1e293b' },
-  { id: 'rose', from: '#fb7185', to: '#ec4899' },
-  { id: 'amber', from: '#f59e0b', to: '#ea580c' },
-  { id: 'indigo', from: '#6366f1', to: '#7c3aed' },
-  { id: 'sky', from: '#0ea5e9', to: '#2563eb' },
-  { id: 'graphite', from: '#52525b', to: '#18181b' },
-  { id: 'lime', from: '#22c55e', to: '#65a30d' },
-  { id: 'fuchsia', from: '#d946ef', to: '#9333ea' },
-  { id: 'sand', from: '#a8a29e', to: '#44403c' },
-];
-const presetCss = (p) => `radial-gradient(circle at 72% 26%, rgba(255,255,255,0.28), transparent 58%), linear-gradient(135deg, ${p.from}, ${p.to})`;
-function presetToPng(p, size = 256) {
-  const c = document.createElement('canvas'); c.width = c.height = size;
-  const x = c.getContext('2d');
-  const g = x.createLinearGradient(0, 0, size, size);
-  g.addColorStop(0, p.from); g.addColorStop(1, p.to);
-  x.fillStyle = g; x.fillRect(0, 0, size, size);
-  const r = x.createRadialGradient(size * 0.72, size * 0.26, size * 0.04, size * 0.72, size * 0.26, size * 0.75);
-  r.addColorStop(0, 'rgba(255,255,255,0.30)'); r.addColorStop(1, 'rgba(255,255,255,0)');
-  x.fillStyle = r; x.fillRect(0, 0, size, size);
-  return c.toDataURL('image/png');
-}
 const STATUSES = [
   { value: 'online', label: 'En ligne' },
   { value: 'idle', label: 'Absent' },
@@ -98,7 +71,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [presetId, setPresetId] = useState(null);
+  const [pickedAvatar, setPickedAvatar] = useState(null); // avatar prêt-à-l'emploi sélectionné (pour le surlignage)
   const [statusMinutes, setStatusMinutes] = useState(0); // expiration à appliquer au statut personnalisé
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [skillDraft, setSkillDraft] = useState('');
@@ -107,7 +80,10 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const avatarInput = useRef(null);
   const bannerInput = useRef(null);
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
-  const pickPreset = (p) => { setPresetId(p.id); set('avatar_url', presetToPng(p)); };
+  async function pickPreset(url) {
+    setPickedAvatar(url);
+    try { set('avatar_url', await assetToDataUrl(url)); } catch { /* ignoré */ }
+  }
   const srcOf = (url) => (url.startsWith('data:') ? url : mediaUrl(url));
 
   // Compétences en étiquettes : stockées en chaîne « a, b, c » (compat serveur),
@@ -127,7 +103,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
     const items = [];
     if (f.avatar_url) items.push({ label: 'Afficher la photo', icon: 'eye', onClick: () => setLightbox(srcOf(f.avatar_url)) });
     items.push({ label: f.avatar_url ? 'Changer la photo' : 'Ajouter une photo', icon: 'image', onClick: () => avatarInput.current?.click() });
-    if (f.avatar_url) items.push({ sep: true }, { label: 'Supprimer la photo', icon: 'trash', danger: true, onClick: () => { setPresetId(null); set('avatar_url', ''); } });
+    if (f.avatar_url) items.push({ sep: true }, { label: 'Supprimer la photo', icon: 'trash', danger: true, onClick: () => { setPickedAvatar(null); set('avatar_url', ''); } });
     openMenu(e.clientX, e.clientY, items);
   };
   // Menu du crayon sur la bannière : afficher, changer, supprimer.
@@ -144,7 +120,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > maxMo * 1024 * 1024) { setError(`Image trop lourde (${maxMo} Mo max).`); return; }
-    if (key === 'avatar_url') setPresetId(null);
+    if (key === 'avatar_url') setPickedAvatar(null);
     setError('');
     try {
       // Conversion en format universel (le HEIC des iPhone devient du JPEG) et
@@ -268,12 +244,14 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
                   <label>Photo de profil</label>
                   <div className="import-row">
                     <button type="button" className="btn btn-ghost import-btn" onClick={() => avatarInput.current?.click()}><Icon name="arrow-up-from-bracket" /> Importer votre image</button>
-                    {f.avatar_url && <button type="button" className="btn btn-ghost import-btn" onClick={() => { setPresetId(null); set('avatar_url', ''); }}>Retirer</button>}
+                    {f.avatar_url && <button type="button" className="btn btn-ghost import-btn" onClick={() => { setPickedAvatar(null); set('avatar_url', ''); }}>Retirer</button>}
                   </div>
-                  <p className="field-hint">Ou choisissez un visuel prêt à l’emploi&nbsp;:</p>
+                  <p className="field-hint">Ou choisissez un avatar prêt à l’emploi&nbsp;:</p>
                   <div className="avatar-presets">
-                    {PRESET_AVATARS.map((p) => (
-                      <button type="button" key={p.id} className={`avatar-preset ${presetId === p.id ? 'selected' : ''}`} style={{ background: presetCss(p) }} title="Choisir cette photo" onClick={() => pickPreset(p)} />
+                    {PRESET_AVATARS.map((url) => (
+                      <button type="button" key={url} className={`avatar-preset ${pickedAvatar === url ? 'selected' : ''}`} title="Choisir cet avatar" onClick={() => pickPreset(url)}>
+                        <img src={url} alt="" />
+                      </button>
                     ))}
                   </div>
                 </div>
