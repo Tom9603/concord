@@ -113,6 +113,15 @@ db.exec(`
     PRIMARY KEY (user_id, channel_id)
   );
 
+  -- Priorité personnelle d'une tâche : chacun range ses tâches à sa main,
+  -- sans changer la priorité décidée par la personne qui l'a créée.
+  CREATE TABLE IF NOT EXISTS task_priorities (
+    user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    task_id  INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    priority TEXT NOT NULL,
+    PRIMARY KEY (user_id, task_id)
+  );
+
   CREATE TABLE IF NOT EXISTS friendships (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

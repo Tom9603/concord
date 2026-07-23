@@ -573,7 +573,7 @@ export default function AppLayout() {
             <ActionCenter
               currentUser={user} tasks={tasks} taskFilter={taskFilter} onTaskFilter={setTaskFilter}
               onToggleTask={toggleTask} onSetTaskStatus={setTaskStatus} onEditTask={editTask}
-              onDeleteTask={deleteTask} onNewTask={openNewTask}
+              onDeleteTask={deleteTask} onNewTask={openNewTask} onRefreshTasks={refreshTasks}
             />
           )}
           {section === 'dm' && (

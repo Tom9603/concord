@@ -4,7 +4,7 @@ import TasksPanel from './TasksPanel.jsx';
 import SavedPanel from './SavedPanel.jsx';
 
 /** Centre « À faire » : un seul endroit pour les tâches et les rappels en attente d'action. */
-export default function ActionCenter({ currentUser, tasks, taskFilter, onTaskFilter, onToggleTask, onSetTaskStatus, onEditTask, onDeleteTask, onNewTask }) {
+export default function ActionCenter({ currentUser, tasks, taskFilter, onTaskFilter, onToggleTask, onSetTaskStatus, onEditTask, onDeleteTask, onNewTask, onRefreshTasks }) {
   const [tab, setTab] = useState('tasks');
   const openTasks = tasks.filter((t) => t.status !== 'done' && t.assignee_id === currentUser.id).length;
 
@@ -23,7 +23,7 @@ export default function ActionCenter({ currentUser, tasks, taskFilter, onTaskFil
         <div className="ac-body">
           <TasksPanel
             tasks={tasks} currentUser={currentUser} filter={taskFilter} onFilter={onTaskFilter}
-            onToggle={onToggleTask} onSetStatus={onSetTaskStatus} onEdit={onEditTask} onDelete={onDeleteTask} onNew={onNewTask}
+            onToggle={onToggleTask} onSetStatus={onSetTaskStatus} onEdit={onEditTask} onDelete={onDeleteTask} onNew={onNewTask} onRefresh={onRefreshTasks}
           />
         </div>
       ) : (

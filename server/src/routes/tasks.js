@@ -71,21 +71,43 @@ function emitTask(task, type) {
 router.get('/', (req, res) => {
   const tasks = db.prepare(`
     SELECT t.*,
-           cu.display_name AS creator_name,
+           cu.display_name AS creator_name, cu.avatar_color AS creator_color, cu.avatar_url AS creator_avatar,
            au.display_name AS assignee_name, au.avatar_color AS assignee_color, au.avatar_url AS assignee_avatar,
            s.name AS server_name, s.icon_url AS server_icon, s.icon_color AS server_color,
-           c.name AS channel_name
+           c.name AS channel_name,
+           tp.priority AS my_priority
     FROM tasks t
     JOIN users cu ON cu.id = t.creator_id
     LEFT JOIN users au ON au.id = t.assignee_id
     LEFT JOIN servers s ON s.id = t.server_id
     LEFT JOIN channels c ON c.id = t.channel_id
-    WHERE t.assignee_id = ? OR t.creator_id = ?
+    LEFT JOIN task_priorities tp ON tp.task_id = t.id AND tp.user_id = @me
+    WHERE t.assignee_id = @me OR t.creator_id = @me
     ORDER BY (t.status = 'done') ASC,
              (t.due_at IS NULL) ASC, t.due_at ASC,
              t.id DESC
-  `).all(req.userId, req.userId);
+  `).all({ me: req.userId });
   res.json({ tasks });
+});
+
+/** Priorité personnelle d'une tâche (rangement à soi, invisible des autres).
+ *  `priority: null` remet la priorité décidée par la personne qui a créé la tâche. */
+router.put('/:id/my-priority', (req, res) => {
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+  if (!task) return res.status(404).json({ error: 'Tâche introuvable' });
+  if (!canTouch(task, req.userId)) return res.status(403).json({ error: 'Accès refusé' });
+
+  const p = req.body?.priority;
+  if (p === null || p === undefined || p === '') {
+    db.prepare('DELETE FROM task_priorities WHERE user_id = ? AND task_id = ?').run(req.userId, task.id);
+    return res.json({ ok: true, my_priority: null });
+  }
+  if (!PRIORITIES.includes(p)) return res.status(400).json({ error: 'Priorité inconnue' });
+  db.prepare(`
+    INSERT INTO task_priorities (user_id, task_id, priority) VALUES (?, ?, ?)
+    ON CONFLICT(user_id, task_id) DO UPDATE SET priority = excluded.priority
+  `).run(req.userId, task.id, p);
+  res.json({ ok: true, my_priority: p });
 });
 
 /** Tâches d'un serveur (tableau d'équipe). */

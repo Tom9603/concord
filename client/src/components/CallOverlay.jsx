@@ -34,25 +34,38 @@ export default function CallOverlay({ call }) {
     <>
       {remoteStream && <RemoteAudio stream={remoteStream} volume={remoteVolume} />}
 
-      {status === 'incoming' && (
+      {/* Appel entrant et appel sortant : une vraie fenêtre au centre de
+          l'écran, impossible à manquer, plutôt qu'une pastille en haut. */}
+      {(status === 'incoming' || status === 'calling') && (
         <div className="call-modal-backdrop">
-          <div className="call-modal">
-            <Avatar user={peer} size={72} />
+          <div className={`call-modal ${status}`}>
+            <div className="call-ring">
+              <Avatar user={peer} size={104} />
+              <span className="call-ring-pulse" aria-hidden="true" />
+            </div>
             <div className="call-name">{peer.display_name}</div>
-            <div className="call-sub">Appel entrant…</div>
+            <div className="call-handle">@{peer.username}</div>
+            <div className="call-sub">
+              <span className="call-sub-dot" />
+              {status === 'incoming' ? 'Appel entrant' : 'Appel en cours'}
+              <span className="call-dots"><i /><i /><i /></span>
+            </div>
+            <div className="call-hint">
+              {status === 'incoming'
+                ? 'Répondez pour démarrer la conversation vocale.'
+                : 'Le téléphone sonne chez votre correspondant. Vous pouvez raccrocher à tout moment.'}
+            </div>
             <div className="call-actions">
-              <button className="call-btn decline" onClick={decline}>Refuser</button>
-              <button className="call-btn accept" onClick={accept}>Accepter</button>
+              {status === 'incoming' ? (
+                <>
+                  <button className="call-btn decline" onClick={decline}><Icon name="phone-slash" /> Refuser</button>
+                  <button className="call-btn accept" onClick={accept}><Icon name="phone" /> Accepter</button>
+                </>
+              ) : (
+                <button className="call-btn decline" onClick={cancel}><Icon name="phone-slash" /> Annuler l’appel</button>
+              )}
             </div>
           </div>
-        </div>
-      )}
-
-      {status === 'calling' && (
-        <div className="call-bar">
-          <Avatar user={peer} size={28} />
-          <span>Appel de {peer.display_name}…</span>
-          <button className="call-btn decline small" onClick={cancel}>Annuler</button>
         </div>
       )}
 

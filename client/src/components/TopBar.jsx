@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import Avatar from './Avatar.jsx';
 import Logo from './Logo.jsx';
 import Icon from './Icon.jsx';
@@ -5,7 +6,49 @@ import NotificationBell from './NotificationBell.jsx';
 import AudioControls from './AudioControls.jsx';
 import { useUpdate, openUpdate } from '../update.js';
 
-const STATUS_LABEL = { online: 'En ligne', idle: 'Absent', dnd: 'Ne pas déranger', meeting: 'En réunion', invisible: 'Hors ligne' };
+const STATUS_LABEL = { online: 'En ligne', idle: 'Absent', dnd: 'Ne pas déranger', meeting: 'En réunion', invisible: 'Invisible' };
+
+/**
+ * Carte personnelle de la barre du haut : photo, nom, état de connexion, et
+ * une ligne de détails qui défile (statut du moment, intitulé, identifiant)
+ * pour tout montrer sans allonger la carte à l'infini.
+ */
+function UserChip({ user, onOpenProfile }) {
+  const details = [
+    user.custom_status ? `${user.custom_status_emoji || ''} ${user.custom_status}`.trim() : null,
+    user.headline || null,
+    user.display_name,
+    '@' + user.username,
+  ].filter(Boolean);
+
+  const [i, setI] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (details.length < 2) { setI(0); return undefined; }
+    // Fondu court avant de changer de ligne : le défilement reste lisible.
+    const tick = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => { setI((n) => (n + 1) % details.length); setVisible(true); }, 220);
+    }, 2000);
+    return () => clearInterval(tick);
+  }, [details.length]);
+
+  const statut = STATUS_LABEL[user.status] || 'En ligne';
+
+  return (
+    <button className="topbar-user" onClick={onOpenProfile} title="Mon profil">
+      <Avatar user={user} size={40} status={user.status} />
+      <span className="tu-meta">
+        <span className="tu-name">{user.display_name}</span>
+        <span className={`tu-status st-${user.status || 'online'}`}>
+          <span className="tu-dot" /> {statut}
+        </span>
+        <span className={`tu-sub ${visible ? '' : 'fading'}`}>{details[i] || ''}</span>
+      </span>
+    </button>
+  );
+}
 
 /** Barre du haut : retour, logo (→ accueil), barre vocale, notifications, profil et réglages. */
 export default function TopBar({
@@ -72,13 +115,7 @@ export default function TopBar({
 
         <AudioControls />
         <button className="topbar-icon" title="Paramètres" onClick={onOpenSettings}><Icon name="gear" /></button>
-        <button className="topbar-user" onClick={onOpenProfile} title="Mon profil">
-          <Avatar user={user} size={34} status={user.status} />
-          <span className="tu-meta">
-            <span className="tu-name">{user.display_name}</span>
-            <span className="tu-sub">{user.headline || STATUS_LABEL[user.status] || 'En ligne'}</span>
-          </span>
-        </button>
+        <UserChip user={user} onOpenProfile={onOpenProfile} />
       </div>
     </header>
   );
