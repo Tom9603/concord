@@ -46,9 +46,9 @@ function UserChip({ user, onOpenProfile }) {
       <Avatar user={user} size={36} status={user.status} />
       <span className="tu-meta">
         <span className="tu-name">{user.display_name}</span>
-        <span className={`tu-status st-${user.status || 'online'}`}>
-          <span className="tu-dot" /> {statut}
-        </span>
+        {/* Pas de pastille ici : la photo porte déjà l'état. Les trois lignes
+            partent ainsi exactement du même bord gauche. */}
+        <span className={`tu-status st-${user.status || 'online'}`}>{statut}</span>
         {/* La ligne de détails glisse vers le haut en fondu : l'ancienne
             s'échappe pendant que la nouvelle monte à sa place. */}
         <span className="tu-sub-wrap">
